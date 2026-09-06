@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="navapur-solid-title navapur-solid-desc">
+  <title id="navapur-solid-title">Navapur mark — flat</title>
+  <desc id="navapur-solid-desc">A clip-path-free version of the Navapur arch mark for rasterisers, embroidery and print workflows that do not support clipping.</desc>
+  <rect width="512" height="512" rx="112" fill="#13201E"/>
+  <rect x="16" y="16" width="480" height="480" rx="100" fill="none" stroke="#2A4741" stroke-width="4"/>
+  <circle cx="256" cy="216" r="52" fill="#8FCFC1"/>
+  <g fill="#E9B875">
+    <rect x="146" y="312" width="48" height="92" rx="6"/>
+    <rect x="200" y="256" width="56" height="148" rx="6"/>
+    <rect x="264" y="290" width="42" height="114" rx="6"/>
+    <rect x="314" y="272" width="54" height="132" rx="6"/>
+  </g>
+  <g fill="#12211E">
+    <rect x="158" y="328" width="12" height="16" rx="3"/><rect x="176" y="328" width="12" height="16" rx="3"/>
+    <rect x="158" y="360" width="12" height="16" rx="3"/><rect x="176" y="360" width="12" height="16" rx="3"/>
+    <rect x="214" y="276" width="13" height="18" rx="3"/><rect x="236" y="276" width="13" height="18" rx="3"/>
+    <rect x="214" y="312" width="13" height="18" rx="3"/><rect x="236" y="312" width="13" height="18" rx="3"/>
+    <rect x="276" y="310" width="12" height="16" rx="3"/><rect x="276" y="344" width="12" height="16" rx="3"/>
+    <rect x="326" y="292" width="13" height="18" rx="3"/><rect x="348" y="292" width="13" height="18" rx="3"/>
+  </g>
+  <path d="M134 404V254c0-58 38-104 86-116l36-34 36 34c48 12 86 58 86 116v150" fill="none" stroke="#E9B875" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M256 62 274 92h-36Z" fill="#E9B875"/>
+  <rect x="96" y="404" width="320" height="30" rx="15" fill="#E9B875"/>
+  <rect x="140" y="446" width="232" height="12" rx="6" fill="#3E6157"/>
+</svg>
