@@ -26,9 +26,9 @@ export class Game {
   scene = new T.Scene();
   camera = new T.PerspectiveCamera(58, innerWidth / innerHeight, 0.15, 4000);
   renderer: T.WebGLRenderer;
-  world = createWorld();
-  sim = new Simulation(this.world.places, this.world.roadCoordinates);
-  traffic = new Traffic();
+  world: ReturnType<typeof createWorld>;
+  sim: Simulation;
+  traffic: Traffic;
   crowd: Crowd;
   animals: Animals;
   audio = new Soundscape();
@@ -66,11 +66,14 @@ export class Game {
     this.quality = this.readSavedQuality() ?? detectQuality();
     this.autoQuality = this.readSavedQuality() === null;
     this.profile = QUALITY_PROFILES[this.quality];
+    this.world = createWorld(this.profile);
+    this.traffic = new Traffic(this.profile);
+    this.sim = new Simulation(this.world.places, this.world.roadCoordinates);
 
     this.renderer = new T.WebGLRenderer({ antialias: this.profile.antialias === 'none', powerPreference: 'high-performance', stencil: false });
     this.renderer.setSize(innerWidth, innerHeight);
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.02;
+    this.renderer.toneMappingExposure = 0.94;
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     applyProfile(this.renderer, this.profile);
     const canvas = this.renderer.domElement;
@@ -384,10 +387,11 @@ export class Game {
     }
 
     this.environment.update(tick, this.elapsed, this.sim.time, this.sim.weather, this.sim.player, this.sim.events);
-    this.world.update(this.sim.time, this.sim.weather);
+    this.world.update(this.sim.time, this.sim.weather, this.elapsed);
     this.crowd.update(this.sim.residents, this.sim.player, this.elapsed, Math.max(tick, 0.0001), this.sim.weather);
     this.animals.update(tick, this.elapsed, this.sim.player, (x, z, r) => this.player.blocked(x, z, r));
     this.postfx.setNight(this.environment.nightAmount);
+    this.traffic.setNight(this.environment.nightAmount);
 
     const v = this.traffic.controlled;
     for (let i = 0; i < this.headlights.length; i++) {

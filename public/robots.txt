@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://suraj1812.github.io/Navapur/sitemap.xml
+Sitemap: /sitemap.xml

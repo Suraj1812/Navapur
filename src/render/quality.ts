@@ -15,6 +15,8 @@ export interface QualityProfile {
   antialias: 'none' | 'smaa' | 'msaa';
   crowd: number;
   crowdRadius: number;
+  vehicles: number;
+  vehicleLights: boolean;
   characterDetail: 0 | 1 | 2;
   rainDrops: number;
   anisotropy: number;
@@ -31,29 +33,29 @@ export const QUALITY_PROFILES: Record<QualityTier, QualityProfile> = {
     label: 'Performance', blurb: 'Smoothest on phones and older laptops.',
     maxPixelRatio: 1, shadows: false, shadowMapSize: 1024, shadowDistance: 55, softShadows: false,
     bloom: false, ambientOcclusion: false, antialias: 'none',
-    crowd: 34, crowdRadius: 62, characterDetail: 0, rainDrops: 900, anisotropy: 2,
-    wetSurfaces: false, lampLights: 6, birds: 10, animals: 6, distantCity: false, environmentIntensity: 0.5,
+    crowd: 34, crowdRadius: 62, vehicles: 22, vehicleLights: false, characterDetail: 0, rainDrops: 900, anisotropy: 2,
+    wetSurfaces: false, lampLights: 10, birds: 10, animals: 6, distantCity: false, environmentIntensity: 0.5,
   },
   balanced: {
     label: 'Balanced', blurb: 'A good picture with a long battery life.',
     maxPixelRatio: 1.25, shadows: true, shadowMapSize: 2048, shadowDistance: 75, softShadows: false,
     bloom: true, ambientOcclusion: false, antialias: 'smaa',
-    crowd: 58, crowdRadius: 85, characterDetail: 1, rainDrops: 1800, anisotropy: 4,
-    wetSurfaces: true, lampLights: 12, birds: 16, animals: 12, distantCity: true, environmentIntensity: 0.55,
+    crowd: 58, crowdRadius: 85, vehicles: 32, vehicleLights: true, characterDetail: 1, rainDrops: 1800, anisotropy: 4,
+    wetSurfaces: true, lampLights: 22, birds: 16, animals: 12, distantCity: true, environmentIntensity: 0.55,
   },
   high: {
     label: 'Cinematic', blurb: 'Soft shadows, bloom and a full street crowd.',
     maxPixelRatio: 1.6, shadows: true, shadowMapSize: 3072, shadowDistance: 95, softShadows: true,
     bloom: true, ambientOcclusion: true, antialias: 'smaa',
-    crowd: 88, crowdRadius: 110, characterDetail: 2, rainDrops: 3200, anisotropy: 8,
-    wetSurfaces: true, lampLights: 20, birds: 24, animals: 18, distantCity: true, environmentIntensity: 0.6,
+    crowd: 88, crowdRadius: 110, vehicles: 44, vehicleLights: true, characterDetail: 2, rainDrops: 3200, anisotropy: 8,
+    wetSurfaces: true, lampLights: 36, birds: 24, animals: 18, distantCity: true, environmentIntensity: 0.6,
   },
   ultra: {
     label: 'Ultra', blurb: 'Everything on. For a desktop with a real GPU.',
     maxPixelRatio: 2, shadows: true, shadowMapSize: 4096, shadowDistance: 125, softShadows: true,
     bloom: true, ambientOcclusion: true, antialias: 'smaa',
-    crowd: 120, crowdRadius: 135, characterDetail: 2, rainDrops: 4800, anisotropy: 16,
-    wetSurfaces: true, lampLights: 30, birds: 34, animals: 26, distantCity: true, environmentIntensity: 0.62,
+    crowd: 120, crowdRadius: 135, vehicles: 56, vehicleLights: true, characterDetail: 2, rainDrops: 4800, anisotropy: 16,
+    wetSurfaces: true, lampLights: 48, birds: 34, animals: 26, distantCity: true, environmentIntensity: 0.62,
   },
 };
 

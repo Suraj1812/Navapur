@@ -1,0 +1,7 @@
+services:
+  navapur:
+    build: .
+    image: navapur:latest
+    ports:
+      - "8080:80"
+    restart: unless-stopped

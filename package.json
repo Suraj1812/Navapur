@@ -1,1 +1,33 @@
-{"name":"navapur-city-simulator","version":"0.1.0","private":true,"type":"module","scripts":{"dev":"vite --host 0.0.0.0","build":"tsc --noEmit && vite build","preview":"vite preview --host 0.0.0.0","test":"node --import tsx --test tests/*.test.ts"},"dependencies":{"lucide":"^0.468.0","three":"^0.180.0"},"devDependencies":{"@playwright/test":"^1.51.0","@types/three":"^0.180.0","agent-browser":"^0.36.0","tsx":"^4.19.2","typescript":"^5.7.2","vite":"^6.1.0"}}
+{
+  "name": "navapur-city-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm test && npm run build",
+    "serve:dist": "vite preview --host 0.0.0.0 --port 4173"
+  },
+  "dependencies": {
+    "lucide": "^0.468.0",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.0",
+    "@types/node": "^22.20.1",
+    "@types/three": "^0.180.0",
+    "agent-browser": "^0.36.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.1.0"
+  },
+  "description": "Navapur — an interactive 3D Indian city you can walk, drive and live in, built with Three.js and Vite.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -6,6 +6,9 @@ export class ModelBuilder {
  box(w:number,h:number,d:number,c:T.ColorRepresentation,x:number,y:number,z:number,rx=0,ry=0,rz=0){this.add(new T.BoxGeometry(w,h,d),c,x,y,z,rx,ry,rz);}
  cylinder(rt:number,rb:number,h:number,c:T.ColorRepresentation,x:number,y:number,z:number,rx=0,ry=0,rz=0){this.add(new T.CylinderGeometry(rt,rb,h,12),c,x,y,z,rx,ry,rz);}
  sphere(r:number,c:T.ColorRepresentation,x:number,y:number,z:number,sx=1,sy=1,sz=1){const g=new T.SphereGeometry(r,12,8);g.scale(sx,sy,sz);this.add(g,c,x,y,z);}
+
+ /** Merge into a mesh that uses a caller-supplied shared material (lamps, lenses). */
+ buildWith(material:T.Material){if(!this.parts.length)return null;const g=mergeGeometries(this.parts);this.parts.forEach(p=>p.dispose());this.parts=[];const m=new T.Mesh(g,material);return m;}
  build(){const g=mergeGeometries(this.parts);this.parts.forEach(p=>p.dispose());const m=new T.Mesh(g,new T.MeshStandardMaterial({vertexColors:true,roughness:.65,metalness:.14}));m.castShadow=true;m.receiveShadow=true;return m;}
 }
 export const clamp=(x:number,a:number,b:number)=>Math.max(a,Math.min(b,x));

@@ -71,7 +71,7 @@ export class GameUI {
     this.element.innerHTML = `
       <div class="cinema-shade" aria-hidden="true"></div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="/Navapur/logo-mark.svg" alt="" aria-hidden="true"><div class="brand-type"><span>NAVAPUR<span class="brand-hindi">नवापुर</span></span><small>A CITY. A THOUSAND LIVES.</small></div><span class="live-badge"><i></i> LIVE CITY</span></div>
+        <div class="brand"><img class="brand-mark" src="${import.meta.env.BASE_URL}logo-mark.svg" alt="" aria-hidden="true"><div class="brand-type"><span>NAVAPUR<span class="brand-hindi">नवापुर</span></span><small>A CITY. A THOUSAND LIVES.</small></div><span class="live-badge"><i></i> LIVE CITY</span></div>
         <div class="location-heading">${icon('pin')}<div><strong data-ref="district">Old Market</strong><span data-ref="subtitle">NAVAPUR, INDIA</span></div></div>
         <div class="topbar-right"><div class="world-clock"><span class="weather-icon" data-ref="weatherIcon">${icon('sun')}</span><div><b data-ref="time">08:30</b><span><span data-ref="weather">Clear skies</span><i>·</i> DAY <span data-ref="day">1</span></span></div></div><div class="topbar-divider"></div><button class="icon-button" data-action="pause" aria-label="Pause game" title="Pause · Esc">${icon('pause')}</button><button class="icon-button" data-action="settings" aria-label="Open settings" title="Settings">${icon('settings')}</button></div>
       </header>
@@ -253,7 +253,7 @@ export class GameUI {
       </div>
       <div class="settings-group"><h3>THE EXPERIENCE</h3>
         <label class="setting-row"><span>City sounds<small>Traffic, birds, footsteps, and rain.</small></span><span class="toggle"><input type="checkbox" data-action="audio" ${settings.audio ? 'checked' : ''} aria-label="City sounds"><i></i></span></label>
-        <label class="setting-row"><span>Visual quality<small>Adjust detail for your device.</small></span><select data-action="quality" aria-label="Visual quality"><option value="high" ${settings.quality === 'high' ? 'selected' : ''}>Cinematic</option><option value="low" ${settings.quality !== 'high' ? 'selected' : ''}>Performance</option></select></label>
+        <label class="setting-row"><span>Visual quality<small>Adjust detail for your device.</small></span><select data-action="quality" aria-label="Visual quality"><option value="auto">Automatic</option><option value="ultra" ${settings.quality === 'ultra' ? 'selected' : ''}>Ultra</option><option value="high" ${settings.quality === 'high' ? 'selected' : ''}>Cinematic</option><option value="balanced" ${settings.quality === 'balanced' ? 'selected' : ''}>Balanced</option><option value="low" ${settings.quality === 'low' ? 'selected' : ''}>Performance</option></select></label>
         <label class="setting-row"><span>Simulation details<small>Show performance and population.</small></span><span class="toggle"><input type="checkbox" data-action="debug" ${settings.debug ? 'checked' : ''} aria-label="Simulation details"><i></i></span></label>
       </div><button class="text-button" data-action="help">Explore the controls ${icon('arrow')}</button>`, 'SETTINGS');
   }
