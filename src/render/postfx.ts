@@ -20,7 +20,7 @@ const GradeShader = {
     uTime: { value: 0 },
     uVignette: { value: 0.82 },
     uGrain: { value: 0.013 },
-    uWarmth: { value: 0.042 },
+    uWarmth: { value: 0.055 },
     uSaturation: { value: 1.14 },
     uLift: { value: new T.Vector3(0.016, 0.016, 0.022) },
     uHaunt: { value: 0 },
@@ -50,13 +50,13 @@ const GradeShader = {
       if (uHaunt > 0.001) {
         // Colour drains out of the night and what is left leans cold.
         float grey = dot(color, vec3(0.2126, 0.7152, 0.0722));
-        vec3 haunted = mix(vec3(grey), color, 0.45);
+        vec3 haunted = mix(vec3(grey), color, 0.6);
         haunted *= vec3(0.82, 1.03, 1.06);
         // A slow breath in the corners, and a little more grain.
         float pulse = 0.5 + 0.5 * sin(uTime * 0.9);
         float edge = smoothstep(1.05, 0.28, length(centred) * 1.5);
-        haunted *= mix(1.0, edge, 0.55 + pulse * 0.2);
-        haunted += (hash(vUv * 1700.0 - uTime * 3.0) - 0.5) * 0.05;
+        haunted *= mix(1.0, edge, 0.34 + pulse * 0.14);
+        haunted += (hash(vUv * 1700.0 - uTime * 3.0) - 0.5) * 0.03;
         color = mix(color, haunted, uHaunt);
       }
       gl_FragColor = vec4(max(color, 0.0), texel.a);

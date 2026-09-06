@@ -91,7 +91,7 @@ export class Game {
     // ACES suits this palette: warm mid-tones, highlights that roll off rather
     // than clip, and it keeps the sky's blue from flattening the whole street.
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.12;
+    this.renderer.toneMappingExposure = 1.2;
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     applyProfile(this.renderer, this.profile);
     const canvas = this.renderer.domElement;

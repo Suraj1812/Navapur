@@ -133,7 +133,7 @@ export class Haunting {
     }
 
     // Ground mist: thin, slow, and always just below the knee.
-    const motes = profile.characterDetail > 0 ? 900 : 400;
+    const motes = profile.characterDetail > 0 ? 2200 : 900;
     this.mistPositions = new Float32Array(motes * 3);
     for (let i = 0; i < motes; i++) {
       this.mistPositions[i * 3] = (Math.random() - 0.5) * 90;
@@ -142,9 +142,20 @@ export class Haunting {
     }
     const geometry = new T.BufferGeometry();
     geometry.setAttribute('position', new T.BufferAttribute(this.mistPositions, 3));
+    // A soft round sprite, so mist looks like mist and not like confetti.
+    const sprite = document.createElement('canvas');
+    sprite.width = sprite.height = 64;
+    const ctx = sprite.getContext('2d')!;
+    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gradient.addColorStop(0, 'rgba(255,255,255,0.55)');
+    gradient.addColorStop(0.5, 'rgba(255,255,255,0.16)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gradient; ctx.fillRect(0, 0, 64, 64);
+    const mistMap = new T.CanvasTexture(sprite);
+    mistMap.colorSpace = T.SRGBColorSpace;
     this.mist = new T.Points(geometry, new T.PointsMaterial({
-      color: '#b9cfcb', size: 1.5, transparent: true, opacity: 0, depthWrite: false,
-      sizeAttenuation: true, blending: T.AdditiveBlending, fog: false,
+      color: '#a9c3c0', map: mistMap, size: 2.6, transparent: true, opacity: 0, depthWrite: false,
+      sizeAttenuation: true, blending: T.NormalBlending, fog: false,
     }));
     this.mist.frustumCulled = false;
     this.group.add(this.mist);
@@ -181,8 +192,10 @@ export class Haunting {
         if (ghost.timer <= 0) {
           // Step out of the dark, by preference just outside the lamplight and
           // just outside your field of view.
-          const spread = ghost.behind ? Math.PI * 0.55 : Math.PI * 2;
-          const angle = cameraYaw + Math.PI + (Math.random() - 0.5) * spread;
+          // Half step out behind you; half are simply already there, ahead.
+          const angle = ghost.behind
+            ? cameraYaw + Math.PI + (Math.random() - 0.5) * Math.PI * 0.55
+            : cameraYaw + (Math.random() - 0.5) * Math.PI * 0.7;
           const range = 16 + Math.random() * 22;
           ghost.x = player.x + Math.sin(angle) * range;
           ghost.z = player.z + Math.cos(angle) * range;
@@ -257,7 +270,7 @@ export class Haunting {
       if (this.mistPositions[i * 3 + 2] > 45) this.mistPositions[i * 3 + 2] = -45;
     }
     this.mist.geometry.attributes.position.needsUpdate = true;
-    (this.mist.material as T.PointsMaterial).opacity = this.intensity * 0.1;
+    (this.mist.material as T.PointsMaterial).opacity = this.intensity * 0.13;
   }
 
   dispose() {

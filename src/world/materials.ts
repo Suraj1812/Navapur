@@ -343,6 +343,11 @@ export function createMaterials(profile: QualityProfile) {
     water: new THREE.MeshPhysicalMaterial({ color: '#6d7f83', roughness: 0.06, metalness: 0.2, transparent: true, opacity: 0.6, clearcoat: 1 }),
     leaf: standard({ map: leafMap, alphaTest: 0.42, side: THREE.DoubleSide, roughness: 0.94, metalness: 0, color: '#ffffff' }),
     contact: contactShadowMaterial(),
+    // Soft-edged ground staining: damp, oil, spilled water, years of use.
+    stain: new THREE.MeshBasicMaterial({
+      map: contactMap, transparent: true, opacity: 0.34, depthWrite: false, color: '#6d5f49',
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+    }),
   };
 
   /**

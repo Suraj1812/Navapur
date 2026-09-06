@@ -483,7 +483,7 @@ export function backCourt(batch: CityBatch, m: CityMaterials, cx: number, cz: nu
   batch.add('cylinder', m.metal, px, 0.85, pz, 0.16, 1.5, 0.16, '#5f6b62');
   batch.box(m.metal, px + 0.4, 1.5, pz, 0.9, 0.1, 0.12, '#6c786e');
   batch.add('cylinder', m.metal, px, 1.2, pz + 0.25, 0.13, 0.4, 0.13, '#6c786e');
-  batch.decal(m.water, px, 0.17, pz, 3.4, 2.6, '#9aa8a6');
+  batch.decal(m.stain, px, 0.17, pz, 4.2, 3.4, '#4f5b58');
   batch.block(px, pz, 0.9, 0.9);
 
   // Washing between the buildings, because it always is.
@@ -500,9 +500,9 @@ export function backCourt(batch: CityBatch, m: CityMaterials, cx: number, cz: nu
   }
 
   // Rubbish, sand, and the ground stains of a working yard.
-  for (let mark = 0; mark < 7; mark++) {
-    batch.decal(m.dirt, cx + (random() - 0.5) * 30, 0.155, cz + (random() - 0.5) * 30,
-      2 + random() * 4, 2 + random() * 4, '#8d8272', random() * 3);
+  for (let mark = 0; mark < 9; mark++) {
+    batch.decal(m.stain, cx + (random() - 0.5) * 30, 0.157, cz + (random() - 0.5) * 30,
+      3 + random() * 5, 3 + random() * 5, mark % 3 === 0 ? '#5a5142' : '#7a6b52', random() * 3);
   }
   batch.add('lowSphere', m.dirt, cx - 14, 0.5, cz + 3, 4.2, 1.2, 3.4, '#a89577');
 }

@@ -246,9 +246,9 @@ export class Environment {
       this.bounce.intensity = daylight * 0.6 * weatherScale;
       this.bounce.color.set('#d8b183');
       this.bounce.position.set(-40, 12, -30);
-      this.moon.intensity = this.nightAmount * 0.55;
+      this.moon.intensity = this.nightAmount * (weather === 'rain' ? 0.4 : 1.05);
       // The sky probe now carries the ambient; the hemisphere only tints the bounce.
-      this.hemisphere.intensity = 0.14 + daylight * (weather === 'rain' ? 0.62 : 0.95) + this.nightAmount * 0.1;
+      this.hemisphere.intensity = 0.14 + daylight * (weather === 'rain' ? 0.62 : 0.95) + this.nightAmount * 0.26;
       this.hemisphere.color.set(weather === 'rain' ? '#93a3a7' : daylight > 0.35 ? '#bcd7e0' : '#41506b');
       this.hemisphere.groundColor.set(weather === 'rain' ? '#5c625f' : '#7d6b56');
       this.sky.material.uniforms.turbidity.value = weather === 'rain' ? 16 : weather === 'cloudy' ? 9.5 : 3.6 + golden * 5;

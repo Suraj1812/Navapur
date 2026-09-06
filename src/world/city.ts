@@ -341,7 +341,7 @@ function buildPark(batch: CityBatch, m: ReturnType<typeof createMaterials>, sign
   pond.position.set(px, 0.3, pz); pond.scale.set(6.9, 1, 5.4);
   group.add(pond);
   for (let lily = 0; lily < 7; lily++) {
-    batch.decal(m.foliage, px + Math.cos(lily * 2.2) * 4, 0.33, pz + Math.sin(lily * 1.7) * 3, 1.1, 1.1, '#4f7145', lily);
+    batch.add('lowSphere', m.foliage, px + Math.cos(lily * 2.2) * 4, 0.33, pz + Math.sin(lily * 1.7) * 3, 1.2, 0.1, 1.2, '#4f7145', lily);
   }
   batch.box(m.dirt, cx + 12, 0.2, cz - 10, 4, 0.06, 20, '#a89272');
   for (const end of [-1, 1]) for (let stump = -1; stump <= 1; stump++) {
