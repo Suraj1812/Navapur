@@ -37,6 +37,9 @@ export function building(
     colliders.push({ minX: p.x - aw / 2, maxX: p.x + aw / 2, minZ: p.z - ad / 2, maxZ: p.z + ad / 2 });
   };
   const roomHeight = 3.55;
+  // Every old city wall is darker for the first metre: damp, splash and dust.
+  const grime = new THREE.Color(color).multiplyScalar(0.78).getHexString();
+  const damp = `#${grime}`;
 
   /* ---------------------------------------------- ground floor */
   if (spec.enterable) {
@@ -114,6 +117,9 @@ export function building(
   }
 
   /* ---------------------------------------------- mass and roof line */
+  // A weathered plinth grounds the facade instead of letting it meet the pavement clean.
+  box(materials.plaster, 0, 0.34, 0.06, w + 0.12, 0.68, d, damp);
+  box(materials.concrete, 0, 0.72, 0.09, w + 0.16, 0.08, d, '#9c9585');
   if (h > roomHeight) box(materials.plaster, 0, roomHeight + (h - roomHeight) / 2, -d / 2, w, h - roomHeight, d, color);
   box(materials.concrete, 0, h + 0.07, -d / 2, w + 0.5, 0.3, d + 0.4, '#c1b9a8');
   box(materials.plaster, 0, h + 0.49, -0.05, w + 0.12, 0.72, 0.2, color);

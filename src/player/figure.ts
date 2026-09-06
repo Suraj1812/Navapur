@@ -1,4 +1,5 @@
 import * as T from 'three';
+import { contactShadowGeometry, contactShadowMaterial } from '../world/materials';
 import {
   RIG, geo, createPose, solvePose,
   type Accessory, type Action, type HairStyle, type Outfit, type Pose,
@@ -87,7 +88,13 @@ class Slot {
   }
 }
 
-export interface CrowdMeshOptions { capacity: number; detail: number; hairStyles: HairStyle[]; accessories: Accessory[]; }
+export interface CrowdMeshOptions {
+  capacity: number; detail: number; hairStyles: HairStyle[]; accessories: Accessory[];
+  /** Override every body material - used by the night apparitions. */
+  material?: T.Material;
+  /** Apparitions cast no shadow and need no contact patch. */
+  grounded?: boolean;
+}
 
 /**
  * One instanced mesh per body part and per visible variant. The whole street -
@@ -102,21 +109,24 @@ export class CrowdMeshes {
   skirt = new Map<'skirt' | 'dhoti', Slot>();
   armU: [Slot, Slot]; armL: [Slot, Slot];
   thigh: [Slot, Slot]; shin: [Slot, Slot]; foot: [Slot, Slot];
+  shadow: Slot;
   private materials: T.Material[] = [];
 
   constructor(private options: CrowdMeshOptions) {
     const { capacity, detail } = options;
     this.group.name = 'Navapur crowd';
     const make = (roughness: number, metalness = 0) => {
+      if (options.material) return options.material;
       const material = new T.MeshStandardMaterial({ vertexColors: true, roughness, metalness });
       this.materials.push(material);
       return material;
     };
+    const grounded = options.grounded !== false;
     const skinMaterial = make(0.58);
     const clothMaterial = make(0.92);
     const hairMaterial = make(0.66);
     const shoeMaterial = make(0.72, 0.05);
-    const slot = (geometry: T.BufferGeometry, material: T.Material, cap = capacity) => new Slot(geometry, material, cap, this.group);
+    const slot = (geometry: T.BufferGeometry, material: T.Material, cap = capacity) => new Slot(geometry, material, cap, this.group, grounded);
 
     this.skin = slot(geo.head(detail), skinMaterial);
     this.features = new Slot(geo.features(detail), skinMaterial, capacity, this.group, false);
@@ -131,6 +141,10 @@ export class CrowdMeshes {
     this.thigh = [slot(geo.thigh(detail), clothMaterial), slot(geo.thigh(detail), clothMaterial)];
     this.shin = [slot(geo.shin(detail), clothMaterial), slot(geo.shin(detail), clothMaterial)];
     this.foot = [slot(geo.foot(detail), shoeMaterial), slot(geo.foot(detail), shoeMaterial)];
+    this.shadow = new Slot(contactShadowGeometry(), contactShadowMaterial(), capacity, this.group, false);
+    this.shadow.mesh.receiveShadow = false;
+    this.shadow.mesh.renderOrder = 1;
+    this.shadow.mesh.visible = grounded;
   }
 
   get detail() { return this.options.detail; }
@@ -140,6 +154,7 @@ export class CrowdMeshes {
     this.hair.forEach(slot => slot.flush());
     this.prop.forEach(slot => slot.flush());
     this.skirt.forEach(slot => slot.flush());
+    this.shadow.flush();
     for (let i = 0; i < 2; i++) { this.armU[i].flush(); this.armL[i].flush(); this.thigh[i].flush(); this.shin[i].flush(); this.foot[i].flush(); }
   }
 
@@ -153,10 +168,18 @@ export class CrowdMeshes {
 const _color = new T.Color();
 const _propMatrix = new T.Matrix4();
 const _offset = new T.Matrix4();
+const _shadowScale = new T.Vector3();
 
 /** Writes one posed person into the shared instanced meshes. */
-export function writePerson(meshes: CrowdMeshes, skeleton: Skeleton, outfit: Outfit) {
+export function writePerson(meshes: CrowdMeshes, skeleton: Skeleton, outfit: Outfit, root?: RootTransform) {
   const detail = meshes.detail;
+  if (root) {
+    // A soft patch on the ground, so nobody floats when real shadows are off.
+    _offset.makeRotationY(root.heading);
+    _offset.scale(_shadowScale.set(0.95 * root.scale, 1, 1.25 * root.scale));
+    _offset.setPosition(root.x, root.y + 0.035, root.z);
+    meshes.shadow.write(_offset, _color.setRGB(1, 1, 1));
+  }
   meshes.skin.write(skeleton.neck, _color.set(outfit.skin));
   if (detail > 0) meshes.features.write(skeleton.neck, _color.setRGB(1, 1, 1));
   const hair = meshes.hair.get(outfit.hair);
@@ -215,12 +238,12 @@ export class HumanFigure {
       this.materials.push(material);
       return material;
     };
-    const skin = standard(outfit.skin, 0.56, { sheen: 0.25, sheenRoughness: 0.7, sheenColor: new T.Color('#ffd9c4'), clearcoat: 0.06, clearcoatRoughness: 0.6 });
+    const skin = standard(outfit.skin, 0.56, { sheen: 0.22, sheenRoughness: 0.75, sheenColor: new T.Color('#ffd9c4') });
     const cloth = standard(outfit.shirt, 0.94, { sheen: 0.45, sheenRoughness: 0.85, sheenColor: new T.Color('#ffffff') });
     const legCloth = standard(outfit.legs === 'short' ? outfit.skin : outfit.legColor, 0.93, { sheen: 0.3 });
     const shinCloth = standard(outfit.legs === 'trouser' ? outfit.legColor : outfit.skin, outfit.legs === 'trouser' ? 0.93 : 0.56);
-    const hairMaterial = standard(outfit.hair === 'turban' || outfit.hair === 'wrap' ? outfit.shirt : outfit.hairColor, 0.58, { clearcoat: 0.3, clearcoatRoughness: 0.4 });
-    const shoe = standard(outfit.shoe, 0.66, { clearcoat: 0.2 });
+    const hairMaterial = standard(outfit.hair === 'turban' || outfit.hair === 'wrap' ? outfit.shirt : outfit.hairColor, 0.5, { clearcoat: 0.25, clearcoatRoughness: 0.4 });
+    const shoe = standard(outfit.shoe, 0.62);
     const featureMaterial = standard('#ffffff', 0.5);
     featureMaterial.vertexColors = true;
     const garment = standard(outfit.garment || outfit.shirt, 0.95, { sheen: 0.6, sheenColor: new T.Color('#fff3e0') });
@@ -242,6 +265,11 @@ export class HumanFigure {
     };
 
     this.group.scale.setScalar(outfit.scale);
+    const shadow = new T.Mesh(contactShadowGeometry(), contactShadowMaterial());
+    shadow.scale.set(0.95, 1, 1.25);
+    shadow.position.y = 0.035;
+    shadow.renderOrder = 1;
+    this.group.add(shadow);
     const pelvis = joint('pelvis', this.group, 0, RIG.hipY, 0);
     const torso = joint('torso', pelvis, 0, RIG.waistY - RIG.hipY, 0);
     const neck = joint('neck', torso, 0, RIG.neckY - RIG.waistY, 0.006);

@@ -16,7 +16,9 @@ export interface World {
   signals: THREE.Mesh[];
   roadMaterial: THREE.MeshStandardMaterial;
   bounds: number;
-  update(time: number, weather: Weather, elapsed: number): void;
+  /** Surface height at a point: the road, the kerb, or the raised block interior. */
+  groundHeight(x: number, z: number): number;
+  update(time: number, weather: Weather, elapsed: number, haunting?: number): void;
   setQuality(profile: QualityProfile): void;
 }
 export interface Item { id:string; name:string; price:number; hunger?:number; energy?:number; health?:number; category:string; }

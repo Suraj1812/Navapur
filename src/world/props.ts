@@ -12,10 +12,29 @@ const LEAF = ['#4c6742', '#5c7649', '#6b8352', '#3f5c3d', '#758a58', '#57713f'];
 
 export type TreeKind = 'neem' | 'gulmohar' | 'palm' | 'banyan' | 'ashoka';
 
+/** A canopy built from crossed leaf billboards rather than smooth green spheres. */
+function canopy(batch: CityBatch, m: CityMaterials, x: number, y: number, z: number, spread: number, height: number, tint: string, random: Random, clusters = 5) {
+  for (let i = 0; i < clusters; i++) {
+    const angle = (i / clusters) * Math.PI * 2 + random() * 0.7;
+    const reach = spread * (0.32 + random() * 0.5);
+    batch.add('leaf', m.leaf,
+      x + Math.cos(angle) * reach,
+      y + (random() - 0.4) * height * 0.42,
+      z + Math.sin(angle) * reach,
+      spread * (0.78 + random() * 0.4), height * (0.7 + random() * 0.4), spread * (0.78 + random() * 0.4),
+      tint, angle * 1.7);
+  }
+  batch.add('leaf', m.leaf, x, y + height * 0.18, z, spread * 1.05, height * 0.95, spread * 1.05, tint, random() * 3);
+}
+
 /** Five street trees you actually see in an Indian town, each with its own silhouette. */
 export function tree(batch: CityBatch, m: CityMaterials, x: number, z: number, size: number, random: Random, kind: TreeKind = 'neem') {
   batch.box(m.concrete, x, 0.13, z, 2.1, 0.24, 2.1, '#a7a18c');
   batch.box(m.dirt, x, 0.27, z, 1.8, 0.06, 1.8, '#5f5443');
+  batch.contact(m.contact, x, z, size * 0.42, 1, 0.05);
+  batch.block(x, z, 1.3, 1.3);
+
+  const tint = ['#c9d6b4', '#b9c9a6', '#d3ddbc', '#a9bd98', '#c2d0ad'][Math.floor(random() * 5)];
 
   if (kind === 'palm') {
     const height = size * 1.25;
@@ -26,56 +45,46 @@ export function tree(batch: CityBatch, m: CityMaterials, x: number, z: number, s
     for (let frond = 0; frond < 9; frond++) {
       const angle = frond / 9 * Math.PI * 2;
       const reach = size * 0.62;
-      batch.add('cone', m.foliage, x + Math.cos(angle) * reach * 0.5, 0.3 + height + Math.sin(frond) * 0.1 - 0.2, z + Math.sin(angle) * reach * 0.5,
-        size * 0.16, reach, size * 0.16, LEAF[frond % 3], angle, 1.35);
+      batch.add('leaf', m.leaf, x + Math.cos(angle) * reach * 0.46, 0.3 + height - 0.15, z + Math.sin(angle) * reach * 0.46,
+        reach * 0.95, size * 0.42, reach * 0.95, tint, angle);
     }
     return;
   }
 
   if (kind === 'ashoka') {
     batch.cylinder(m.wood, x, size * 0.35, z, size * 0.055, size * 0.7, size * 0.055, '#6d5c46');
-    for (let tier = 0; tier < 5; tier++) {
-      const t = tier / 5;
-      batch.add('cone', m.foliage, x, size * (0.5 + t * 0.42), z, size * (0.34 - t * 0.2), size * 0.55, size * (0.34 - t * 0.2), LEAF[tier % LEAF.length]);
+    for (let tier = 0; tier < 4; tier++) {
+      const t = tier / 4;
+      batch.add('leaf', m.leaf, x, size * (0.5 + t * 0.42), z, size * (0.5 - t * 0.24), size * 0.62, size * (0.5 - t * 0.24), tint, tier * 1.3);
     }
     return;
   }
 
-  const trunkHeight = size * (kind === 'banyan' ? 0.5 : 0.82);
+  const trunkHeight = size * (kind === 'banyan' ? 0.5 : 0.78);
   batch.add('cylinder', m.wood, x, trunkHeight * 0.5, z, size * 0.09, trunkHeight, size * 0.09, '#6b5a44');
-  const branches = kind === 'banyan' ? 7 : 5;
+  const branches = kind === 'banyan' ? 6 : 4;
   for (let branch = 0; branch < branches; branch++) {
     const angle = branch / branches * Math.PI * 2 + random() * 0.5;
-    const spread = size * (kind === 'banyan' ? 0.42 : 0.24 + random() * 0.1);
+    const spread = size * (kind === 'banyan' ? 0.42 : 0.26 + random() * 0.1);
     const bx = x + Math.cos(angle) * spread;
     const bz = z + Math.sin(angle) * spread;
-    batch.line(m.wood, new THREE.Vector3(x, trunkHeight * 0.72, z), new THREE.Vector3(bx, trunkHeight + size * 0.1, bz), size * 0.03, '#6b5a44');
-    // Two overlapping clumps per branch read as leaves rather than as a ball.
-    batch.add('sphere', m.foliage, bx, trunkHeight + size * (0.12 + random() * 0.12), bz,
-      size * (kind === 'banyan' ? 0.62 : 0.5), size * 0.42, size * 0.54, LEAF[branch % LEAF.length], angle);
-    batch.add('lowSphere', m.foliage, bx + Math.cos(angle) * size * 0.16, trunkHeight + size * (0.24 + random() * 0.1), bz + Math.sin(angle) * size * 0.16,
-      size * 0.38, size * 0.3, size * 0.36, LEAF[(branch + 2) % LEAF.length], angle * 1.7);
-    batch.add('lowSphere', m.foliage, bx - Math.cos(angle) * size * 0.12, trunkHeight + size * 0.04, bz - Math.sin(angle) * size * 0.12,
-      size * 0.34, size * 0.26, size * 0.32, LEAF[(branch + 4) % LEAF.length], angle * 0.6);
-    if (kind === 'banyan') {
-      // Aerial roots: the reason people gather under these.
-      batch.add('cylinder', m.wood, bx, trunkHeight * 0.55, bz, 0.055, trunkHeight * 1.1, 0.055, '#7a6a52');
-    }
+    batch.line(m.wood, new THREE.Vector3(x, trunkHeight * 0.72, z), new THREE.Vector3(bx, trunkHeight + size * 0.12, bz), size * 0.032, '#6b5a44');
+    if (kind === 'banyan') batch.add('cylinder', m.wood, bx, trunkHeight * 0.55, bz, 0.055, trunkHeight * 1.1, 0.055, '#7a6a52');
     if (kind === 'gulmohar' && branch % 2 === 0) {
-      batch.add('sphere', m.foliage, bx, trunkHeight + size * 0.26, bz, size * 0.3, size * 0.16, size * 0.28, '#c25a30', angle);
+      batch.add('lowSphere', m.foliage, bx, trunkHeight + size * 0.3, bz, size * 0.26, size * 0.13, size * 0.24, '#c25a30', angle);
     }
   }
-  batch.add('sphere', m.foliage, x, trunkHeight + size * (kind === 'banyan' ? 0.3 : 0.26), z, size * 0.56, size * 0.44, size * 0.54, LEAF[2]);
-  batch.add('lowSphere', m.foliage, x, trunkHeight + size * 0.4, z, size * 0.36, size * 0.28, size * 0.34, LEAF[4]);
+  canopy(batch, m, x, trunkHeight + size * 0.2, z, size * (kind === 'banyan' ? 0.95 : 0.78), size * (kind === 'banyan' ? 0.62 : 0.72), tint, random, kind === 'banyan' ? 7 : 5);
 }
 
 export function potPlant(batch: CityBatch, m: CityMaterials, x: number, y: number, z: number, scale = 1, color = '#a4522f') {
+  if (y < 0.2) batch.contact(m.contact, x, z, 0.5 * scale, 1, y + 0.02);
   batch.add('cylinder', m.tile, x, y + 0.16 * scale, z, 0.3 * scale, 0.34 * scale, 0.3 * scale, color);
   batch.add('cylinder', m.tile, x, y + 0.33 * scale, z, 0.34 * scale, 0.06 * scale, 0.34 * scale, color);
-  for (let leaf = 0; leaf < 5; leaf++) {
-    const angle = leaf / 5 * Math.PI * 2;
-    batch.add('sphere', m.foliage, x + Math.cos(angle) * 0.12 * scale, y + (0.5 + (leaf % 2) * 0.12) * scale, z + Math.sin(angle) * 0.12 * scale,
-      0.3 * scale, 0.24 * scale, 0.3 * scale, LEAF[leaf % LEAF.length], angle);
+  for (let leaf = 0; leaf < 3; leaf++) {
+    const angle = leaf / 3 * Math.PI * 2;
+    batch.add('leaf', m.leaf, x + Math.cos(angle) * 0.1 * scale, y + (0.56 + (leaf % 2) * 0.1) * scale, z + Math.sin(angle) * 0.1 * scale,
+      0.62 * scale, 0.56 * scale, 0.62 * scale, '#c4d2ab', angle);
   }
 }
 
@@ -85,6 +94,8 @@ export function potPlant(batch: CityBatch, m: CityMaterials, x: number, y: numbe
 
 export function bench(batch: CityBatch, m: CityMaterials, x: number, z: number, angle = 0) {
   const sin = Math.sin(angle); const cos = Math.cos(angle);
+  batch.contact(m.contact, x, z, 1.5, 1, 0.04);
+  batch.block(x, z, 2.3, 0.9, angle);
   for (let slat = 0; slat < 3; slat++) {
     batch.box(m.wood, x - sin * (slat - 1) * 0.21, 0.52, z - cos * (slat - 1) * 0.21, 2.2, 0.07, 0.18, '#8a6a45', angle);
   }
@@ -98,6 +109,8 @@ export function bench(batch: CityBatch, m: CityMaterials, x: number, z: number, 
 }
 
 export function dustbin(batch: CityBatch, m: CityMaterials, x: number, z: number, color = '#4c6b52') {
+  batch.contact(m.contact, x, z, 0.72, 1, 0.04);
+  batch.block(x, z, 0.8, 0.8);
   batch.add('cylinder', m.metal, x, 0.44, z, 0.62, 0.88, 0.62, color);
   batch.add('cylinder', m.metal, x, 0.9, z, 0.7, 0.07, 0.7, '#8b9a90');
   batch.add('cylinder', m.metal, x, 0.96, z, 0.36, 0.08, 0.36, '#8b9a90');
@@ -105,6 +118,8 @@ export function dustbin(batch: CityBatch, m: CityMaterials, x: number, z: number
 }
 
 export function streetLamp(batch: CityBatch, m: CityMaterials, x: number, z: number, direction: number, lamps: THREE.Mesh[], allowLight = true) {
+  batch.contact(m.contact, x, z, 0.62, 1, 0.04);
+  batch.block(x, z, 0.55, 0.55);
   batch.cylinder(m.metal, x, 3.7, z, 0.15, 7.4, 0.15, '#5e6862');
   batch.add('cylinder', m.concrete, x, 0.34, z, 0.5, 0.68, 0.5, '#8f9080');
   batch.add('cylinder', m.metal, x, 7.05, z, 0.19, 0.16, 0.19, '#77837a');
@@ -125,6 +140,7 @@ export function streetLamp(batch: CityBatch, m: CityMaterials, x: number, z: num
 
 /** Signal head plus pole; the emissive aspect is swapped by the traffic system. */
 export function trafficSignal(batch: CityBatch, m: CityMaterials, x: number, z: number, angle: number, signals: THREE.Mesh[]) {
+  batch.block(x, z, 0.7, 0.7);
   batch.add('cylinder', m.metal, x, 2.4, z, 0.11, 4.8, 0.11, '#4e5a54');
   batch.add('cylinder', m.concrete, x, 0.2, z, 0.4, 0.4, 0.4, '#9a9787');
   const sin = Math.sin(angle), cos = Math.cos(angle);
@@ -143,6 +159,8 @@ export function trafficSignal(batch: CityBatch, m: CityMaterials, x: number, z: 
 
 export function busShelter(batch: CityBatch, m: CityMaterials, x: number, z: number, angle: number) {
   const sin = Math.sin(angle); const cos = Math.cos(angle);
+  // The back panel and posts are solid; the front stays open so you can shelter.
+  batch.block(x - Math.sin(angle) * 0.85, z - Math.cos(angle) * 0.85, 5.4, 0.4, angle);
   for (const side of [-1, 1]) batch.box(m.metal, x + side * cos * 2.6, 1.55, z - side * sin * 2.6, 0.09, 3.1, 0.09, '#46584d');
   batch.box(m.metal, x, 3.15, z, 5.8, 0.16, 2.4, '#4f6155', angle);
   batch.box(m.tile, x - sin * 0.1, 3.28, z - cos * 0.1, 5.9, 0.1, 2.5, '#8d5a3f', angle);
@@ -153,7 +171,10 @@ export function busShelter(batch: CityBatch, m: CityMaterials, x: number, z: num
 
 /** Big roadside hoarding: the loudest thing on any Indian high street. */
 export function hoarding(batch: CityBatch, m: CityMaterials, x: number, z: number, angle: number, color: string) {
-  for (const side of [-1, 1]) batch.add('cylinder', m.metal, x + Math.cos(angle) * side * 2.6, 2.6, z - Math.sin(angle) * side * 2.6, 0.16, 5.2, 0.16, '#59635c');
+  for (const side of [-1, 1]) {
+    batch.add('cylinder', m.metal, x + Math.cos(angle) * side * 2.6, 2.6, z - Math.sin(angle) * side * 2.6, 0.16, 5.2, 0.16, '#59635c');
+    batch.block(x + Math.cos(angle) * side * 2.6, z - Math.sin(angle) * side * 2.6, 0.5, 0.5);
+  }
   batch.box(m.dark, x, 6.4, z, 7.4, 3.4, 0.16, '#3c443f', angle);
   batch.panel(m.paint, x + Math.sin(angle) * 0.1, 6.4, z + Math.cos(angle) * 0.1, 7, 3.1, color, angle);
   batch.box(m.metal, x, 4.6, z, 7.4, 0.14, 0.5, '#5d6961', angle);
@@ -161,12 +182,15 @@ export function hoarding(batch: CityBatch, m: CityMaterials, x: number, z: numbe
 }
 
 export function barricade(batch: CityBatch, m: CityMaterials, x: number, z: number, angle: number) {
+  batch.block(x, z, 2.3, 0.6, angle);
   batch.box(m.wood, x, 0.86, z, 2.2, 0.22, 0.1, '#d8d2c2', angle);
   batch.box(m.wood, x, 0.52, z, 2.2, 0.22, 0.1, '#c14b39', angle);
   for (const side of [-1, 1]) batch.box(m.wood, x + Math.cos(angle) * side * 0.95, 0.5, z - Math.sin(angle) * side * 0.95, 0.12, 1, 0.4, '#9a9384', angle);
 }
 
 export function tyreStack(batch: CityBatch, m: CityMaterials, x: number, z: number, count = 4) {
+  batch.block(x, z, 1.2, 1.2);
+  batch.contact(m.contact, x, z, 0.8, 1, 0.04);
   for (let i = 0; i < count; i++) {
     batch.add('torus', m.dark, x + Math.sin(i * 2.1) * 0.05, 0.16 + i * 0.2, z + Math.cos(i * 1.7) * 0.05, 1.05, 1.05, 1.05, '#22262a', i * 0.6, Math.PI / 2);
   }
@@ -174,6 +198,8 @@ export function tyreStack(batch: CityBatch, m: CityMaterials, x: number, z: numb
 
 export function handCart(batch: CityBatch, m: CityMaterials, x: number, z: number, angle: number, color = '#7d6a4a') {
   const sin = Math.sin(angle), cos = Math.cos(angle);
+  batch.block(x, z, 2.6, 1.5, angle);
+  batch.contact(m.contact, x, z, 1.7, 1, 0.04);
   batch.box(m.wood, x, 0.86, z, 2.4, 0.12, 1.3, color, angle);
   for (let rail = 0; rail < 2; rail++) batch.box(m.wood, x + sin * (rail ? 0.62 : -0.62), 1.02, z + cos * (rail ? 0.62 : -0.62), 2.4, 0.2, 0.08, color, angle);
   for (const side of [-1, 1]) batch.add('torus', m.dark, x + cos * side * 0.68, 0.4, z - sin * side * 0.68, 0.86, 0.86, 0.86, '#1f2326', angle, Math.PI / 2);
@@ -181,11 +207,11 @@ export function handCart(batch: CityBatch, m: CityMaterials, x: number, z: numbe
 }
 
 export function speedBreaker(batch: CityBatch, m: CityMaterials, x: number, z: number, horizontal: boolean) {
-  const length = 15;
+  // A painted hump, not a kerb: eight centimetres of it, and you feel the car lift.
   for (let stripe = -7; stripe <= 7; stripe++) {
-    const color = stripe % 2 === 0 ? '#d9cf9f' : '#3a3a38';
-    if (horizontal) batch.add('cylinder', m.paint, x + stripe * (length / 15), 0.02, z, 0.16, length / 15 * 0.95, 0.16, color, 0, 0, Math.PI / 2);
-    else batch.add('cylinder', m.paint, x, 0.02, z + stripe * (length / 15), 0.16, length / 15 * 0.95, 0.16, color, Math.PI / 2, 0, Math.PI / 2);
+    const color = stripe % 2 === 0 ? '#d9cf9f' : '#33322f';
+    if (horizontal) batch.add('cylinder', m.paint, x + stripe, 0.0, z, 0.09, 0.94, 0.09, color, 0, 0, Math.PI / 2);
+    else batch.add('cylinder', m.paint, x, 0.0, z + stripe, 0.09, 0.94, 0.09, color, Math.PI / 2, 0, Math.PI / 2);
   }
 }
 
@@ -197,11 +223,12 @@ export function median(batch: CityBatch, m: CityMaterials, x1: number, z1: numbe
     const x = x1 + (x2 - x1) * t; const z = z1 + (z2 - z1) * t;
     // A low painted kerb with a hedge, the way a divided carriageway really looks.
     batch.box(m.concrete, x, 0.17, z, horizontal ? 5.7 : 0.66, 0.34, horizontal ? 0.66 : 5.7, '#d6c99b');
+    batch.block(x, z, horizontal ? 5.7 : 0.66, horizontal ? 0.66 : 5.7);
     batch.box(m.paint, x, 0.18, z, horizontal ? 2.8 : 0.68, 0.345, horizontal ? 0.68 : 2.8, '#2f3330');
     if (i % 3 === 0) potPlant(batch, m, x, 0.34, z, 0.55, '#8d5a3a');
     else for (let clump = -1; clump <= 1; clump++) {
-      batch.add('lowSphere', m.foliage, x + (horizontal ? clump * 1.5 : 0), 0.5, z + (horizontal ? 0 : clump * 1.5),
-        0.62, 0.42, 0.62, LEAF[Math.floor(random() * LEAF.length)], clump);
+      batch.add('leaf', m.leaf, x + (horizontal ? clump * 1.5 : 0), 0.62, z + (horizontal ? 0 : clump * 1.5),
+        1.4, 0.9, 1.4, '#c3d1aa', clump * 1.1);
     }
   }
 }
@@ -212,6 +239,8 @@ export function median(batch: CityBatch, m: CityMaterials, x1: number, z1: numbe
 
 export function marketCart(batch: CityBatch, m: CityMaterials, x: number, z: number, angle: number, random: Random, chai = false) {
   const sin = Math.sin(angle); const cos = Math.cos(angle);
+  batch.contact(m.contact, x, z, 1.9, 1, 0.04);
+  batch.block(x, z, 2.7, 1.6, angle);
   const box = (mat: THREE.Material, lx: number, y: number, lz: number, sx: number, sy: number, sz: number, color: string) =>
     batch.box(mat, x + lx * cos + lz * sin, y, z - lx * sin + lz * cos, sx, sy, sz, color, angle);
   box(m.wood, 0, 0.9, 0, 2.5, 0.52, 1.2, chai ? '#8a5c3d' : '#69795c');
@@ -248,6 +277,8 @@ export function marketCart(batch: CityBatch, m: CityMaterials, x: number, z: num
 export function foodStall(batch: CityBatch, m: CityMaterials, x: number, z: number, angle: number, color = '#8c4a34') {
   const sin = Math.sin(angle), cos = Math.cos(angle);
   const at = (lx: number, lz: number) => ({ x: x + lx * cos + lz * sin, z: z - lx * sin + lz * cos });
+  batch.contact(m.contact, x, z, 2.2, 1, 0.04);
+  batch.block(x, z, 3.3, 1.7, angle);
   batch.box(m.metal, x, 0.55, z, 3.1, 1.1, 1.4, '#9aa19a', angle);
   batch.box(m.dark, x, 1.14, z, 3.2, 0.09, 1.5, '#4b4f4a', angle);
   const griddle = at(-0.85, 0);
@@ -266,6 +297,8 @@ export function foodStall(batch: CityBatch, m: CityMaterials, x: number, z: numb
 
 export function paanShop(batch: CityBatch, m: CityMaterials, x: number, z: number, angle: number) {
   const sin = Math.sin(angle), cos = Math.cos(angle);
+  batch.block(x, z, 2.1, 1.3, angle);
+  batch.contact(m.contact, x, z, 1.5, 1, 0.04);
   batch.box(m.wood, x, 0.9, z, 1.9, 1.8, 1.1, '#6f5a3d', angle);
   batch.box(m.glass, x + sin * 0.58, 1.35, z + cos * 0.58, 1.7, 0.75, 0.05, '#b7c9c2', angle);
   batch.box(m.corrugated, x, 1.92, z, 2.2, 0.09, 1.4, '#8d9691', angle);
@@ -392,4 +425,84 @@ export function cycleRack(batch: CityBatch, m: CityMaterials, x: number, z: numb
     batch.box(m.dark, bx - sin * 0.34, 0.8, bz - cos * 0.34, 0.11, 0.07, 0.28, '#2a2e2c', angle);
     batch.box(m.metal, bx + sin * 0.48, 0.98, bz + cos * 0.48, 0.42, 0.04, 0.04, '#59656b', angle);
   }
+}
+
+
+/**
+ * The inside of a city block is never an empty plaza. It is where the scooters
+ * park, the water drums sit, the tarpaulin covers something that has been there
+ * for years, and somebody's washing is always out.
+ */
+export function backCourt(batch: CityBatch, m: CityMaterials, cx: number, cz: number, random: Random, industrial = false) {
+  // A low boundary wall so the raised block reads as a place, not a slab.
+  for (let edge = 0; edge < 4; edge++) {
+    const horizontal = edge < 2;
+    const offset = edge % 2 === 0 ? -17.5 : 17.5;
+    const x = horizontal ? cx : cx + offset;
+    const z = horizontal ? cz + offset : cz;
+    batch.box(m.brick, x, 0.62, z, horizontal ? 30 : 0.42, 1.05, horizontal ? 0.42 : 30, '#9a7a5e');
+    batch.box(m.concrete, x, 1.18, z, horizontal ? 30.3 : 0.62, 0.1, horizontal ? 0.62 : 30.3, '#b3ab98');
+    batch.block(x, z, horizontal ? 30 : 0.5, horizontal ? 0.5 : 30);
+  }
+
+  // Parked two-wheelers along one wall.
+  cycleRack(batch, m, cx - 11, cz - 15.4, 0, 5);
+  batch.contact(m.contact, cx - 11, cz - 15.4, 2.4, 1, 0.16);
+
+  // Water drums and gas cylinders by the kitchen doors.
+  for (let drum = 0; drum < 4; drum++) {
+    const x = cx + 9 + (drum % 2) * 1.5;
+    const z = cz - 14 + Math.floor(drum / 2) * 1.6;
+    batch.add('cylinder', m.paint, x, 0.6, z, 0.72, 0.9, 0.72, ['#3f6a7d', '#6a7a52', '#8a5a3a'][drum % 3]);
+    batch.add('cylinder', m.metal, x, 1.07, z, 0.78, 0.06, 0.78, '#a2a89c');
+    batch.block(x, z, 0.9, 0.9);
+  }
+  batch.contact(m.contact, cx + 9.7, cz - 13.4, 2.4, 1, 0.16);
+
+  // A tarpaulin over a stack of something nobody has moved in years.
+  const sx = cx - 12 + random() * 4; const sz = cz + 11 + random() * 4;
+  for (let crate = 0; crate < 5; crate++) {
+    batch.box(m.wood, sx + (crate % 3) * 1.05 - 1.05, 0.42 + Math.floor(crate / 3) * 0.8, sz, 0.95, 0.78, 1.15, '#87693f');
+  }
+  batch.box(m.cloth, sx, 1.35, sz, 4.2, 0.09, 2.4, ['#4a6a5a', '#7a5a3a', '#5a6a7a'][Math.floor(random() * 3)]);
+  batch.box(m.cloth, sx, 1.05, sz + 1.25, 4.2, 0.6, 0.03, '#4a6a5a');
+  batch.block(sx, sz, 4.2, 2.5);
+  batch.contact(m.contact, sx, sz, 2.8, 1, 0.16);
+
+  // A corrugated shed in the corner.
+  const dx = cx + 12.5; const dz = cz + 12.5;
+  batch.box(m.corrugated, dx, 1.25, dz, 5.2, 2.5, 4, '#8d968f');
+  batch.box(m.corrugated, dx, 2.62, dz, 5.6, 0.16, 4.4, '#7c857f');
+  batch.box(m.metal, dx, 1.05, dz - 2.05, 1.6, 2.1, 0.08, '#5c665f');
+  batch.block(dx, dz, 5.4, 4.2);
+  batch.contact(m.contact, dx, dz, 3.6, 1, 0.16);
+
+  // A hand pump, and the wet patch that never dries.
+  const px = cx - 2 + random() * 4; const pz = cz - 8 + random() * 3;
+  batch.add('cylinder', m.concrete, px, 0.24, pz, 1.5, 0.34, 1.5, '#b0a892');
+  batch.add('cylinder', m.metal, px, 0.85, pz, 0.16, 1.5, 0.16, '#5f6b62');
+  batch.box(m.metal, px + 0.4, 1.5, pz, 0.9, 0.1, 0.12, '#6c786e');
+  batch.add('cylinder', m.metal, px, 1.2, pz + 0.25, 0.13, 0.4, 0.13, '#6c786e');
+  batch.decal(m.water, px, 0.17, pz, 3.4, 2.6, '#9aa8a6');
+  batch.block(px, pz, 0.9, 0.9);
+
+  // Washing between the buildings, because it always is.
+  laundryLine(batch, m, cx, 3.4, cz - 4, 12, 0, random);
+  if (!industrial) laundryLine(batch, m, cx + 4, 4.2, cz + 6, 10, Math.PI / 2, random);
+
+  // Plastic chairs nobody put away.
+  for (let chair = 0; chair < 3; chair++) {
+    const chx = cx + 4 + chair * 1.3; const chz = cz + 3.5 + (chair % 2) * 0.8;
+    batch.box(m.paint, chx, 0.45, chz, 0.52, 0.06, 0.52, ['#b04a3a', '#3f6a7d', '#e0dccc'][chair]);
+    batch.box(m.paint, chx, 0.72, chz - 0.24, 0.52, 0.5, 0.05, ['#b04a3a', '#3f6a7d', '#e0dccc'][chair]);
+    for (const corner of [-0.2, 0.2]) batch.box(m.paint, chx + corner, 0.22, chz, 0.05, 0.44, 0.05, '#9a9488');
+    batch.contact(m.contact, chx, chz, 0.42, 1, 0.16);
+  }
+
+  // Rubbish, sand, and the ground stains of a working yard.
+  for (let mark = 0; mark < 7; mark++) {
+    batch.decal(m.dirt, cx + (random() - 0.5) * 30, 0.155, cz + (random() - 0.5) * 30,
+      2 + random() * 4, 2 + random() * 4, '#8d8272', random() * 3);
+  }
+  batch.add('lowSphere', m.dirt, cx - 14, 0.5, cz + 3, 4.2, 1.2, 3.4, '#a89577');
 }

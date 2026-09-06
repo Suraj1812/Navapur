@@ -30,11 +30,21 @@ export class PlayerController {
   private lastZ = 0;
   private lastYaw = Math.PI;
   private headBob = 0;
+  private surface = 0;
   private lookIdle = 99;
   private desired = new T.Vector3();
   private target = new T.Vector3();
 
+  /** Colliders bucketed into a coarse grid, so a step costs a handful of tests
+   *  rather than a walk over every wall, cart and lamp post in the city. */
+  private grid = new Map<number, Collider[]>();
+  private readonly cell = 8;
+
+  /** Surface height under a point, so feet meet the kerb instead of sinking through it. */
+  ground: (x: number, z: number) => number = () => 0;
+
   constructor(private camera: T.PerspectiveCamera, canvas: HTMLCanvasElement, private colliders: Collider[], private bounds: number) {
+    this.indexColliders();
     addEventListener('keydown', e => {
       if ((e.target as HTMLElement).matches('input,select,textarea')) return;
       this.keys.add(e.code);
@@ -53,9 +63,38 @@ export class PlayerController {
     canvas.addEventListener('dblclick', () => { canvas.requestPointerLock?.()?.catch(() => { }); });
   }
 
+  private key(cx: number, cz: number) { return (cx + 4096) * 8192 + (cz + 4096); }
+
+  private indexColliders() {
+    this.grid.clear();
+    for (const collider of this.colliders) {
+      const minX = Math.floor(collider.minX / this.cell);
+      const maxX = Math.floor(collider.maxX / this.cell);
+      const minZ = Math.floor(collider.minZ / this.cell);
+      const maxZ = Math.floor(collider.maxZ / this.cell);
+      for (let cx = minX; cx <= maxX; cx++) for (let cz = minZ; cz <= maxZ; cz++) {
+        const key = this.key(cx, cz);
+        let bucket = this.grid.get(key);
+        if (!bucket) { bucket = []; this.grid.set(key, bucket); }
+        bucket.push(collider);
+      }
+    }
+  }
+
   blocked(x: number, z: number, r = 0.36) {
-    return Math.abs(x) > this.bounds || Math.abs(z) > this.bounds
-      || this.colliders.some(c => x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ);
+    if (Math.abs(x) > this.bounds || Math.abs(z) > this.bounds) return true;
+    const minX = Math.floor((x - r) / this.cell);
+    const maxX = Math.floor((x + r) / this.cell);
+    const minZ = Math.floor((z - r) / this.cell);
+    const maxZ = Math.floor((z + r) / this.cell);
+    for (let cx = minX; cx <= maxX; cx++) for (let cz = minZ; cz <= maxZ; cz++) {
+      const bucket = this.grid.get(this.key(cx, cz));
+      if (!bucket) continue;
+      for (const c of bucket) {
+        if (x + r > c.minX && x - r < c.maxX && z + r > c.minZ && z - r < c.maxZ) return true;
+      }
+    }
+    return false;
   }
 
   update(dt: number, p: PlayerState, elapsed: number, enabled: boolean) {
@@ -115,7 +154,10 @@ export class PlayerController {
       this.yaw += clamp(diff, -dt * rate, dt * rate);
     }
 
-    this.avatar.group.position.set(p.x, this.height + (this.inVehicle ? 0.42 : 0), p.z);
+    // Step up onto the kerb smoothly rather than snapping.
+    const surface = this.inVehicle ? 0 : this.ground(p.x, p.z);
+    this.surface += (surface - this.surface) * Math.min(1, dt * 14);
+    this.avatar.group.position.set(p.x, this.surface + this.height + (this.inVehicle ? 0.42 : 0), p.z);
     if (this.inVehicle) this.avatar.group.rotation.y = this.yaw;
     this.avatar.group.visible = !this.firstPerson;
     this.avatar.animate(dt, this.inVehicle ? 0 : this.speed, this.inVehicle ? 'drive' : 'walk', elapsed, turnRate * 0.06, this.crouchBlend);
@@ -125,10 +167,10 @@ export class PlayerController {
     const range = this.firstPerson ? 0.02 : this.inVehicle ? 8 : 5.8;
     const eye = 1.62 - this.crouchBlend * 0.42;
     const elevation = this.firstPerson ? eye : 2.55 + Math.sin(this.pitch) * range - this.crouchBlend * 0.3;
-    this.target.set(p.x, this.inVehicle ? 1.4 : 1.25 - this.crouchBlend * 0.3, p.z);
+    this.target.set(p.x, this.surface + (this.inVehicle ? 1.4 : 1.25 - this.crouchBlend * 0.3), p.z);
     this.desired.set(
       p.x - Math.sin(this.yaw) * range * Math.cos(this.pitch),
-      elevation + this.height + bob,
+      this.surface + elevation + this.height + bob,
       p.z - Math.cos(this.yaw) * range * Math.cos(this.pitch),
     );
 
@@ -141,7 +183,7 @@ export class PlayerController {
     }
 
     this.camera.position.lerp(this.desired, 1 - Math.exp(-dt * (this.firstPerson ? 22 : 9)));
-    if (this.firstPerson) this.target.set(p.x + Math.sin(this.yaw) * 10, eye + bob - Math.sin(this.pitch) * 10, p.z + Math.cos(this.yaw) * 10);
+    if (this.firstPerson) this.target.set(p.x + Math.sin(this.yaw) * 10, this.surface + eye + bob - Math.sin(this.pitch) * 10, p.z + Math.cos(this.yaw) * 10);
     this.camera.lookAt(this.target);
   }
 

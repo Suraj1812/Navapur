@@ -26,6 +26,8 @@ export class Crowd {
   private skeleton = createSkeleton();
   private root: RootTransform = { x: 0, y: 0, z: 0, heading: 0, scale: 1, headScale: 1 };
   private profile: QualityProfile;
+  /** Surface height under a point, so the crowd walks on the kerb, not through it. */
+  ground: (x: number, z: number) => number = () => 0;
 
   constructor(profile: QualityProfile = QUALITY_PROFILES.high) {
     this.profile = profile;
@@ -104,7 +106,8 @@ export class Crowd {
       const action = this.actionFor(resident);
       const walk = T.MathUtils.clamp(entry.speed / 3.4, 0, 1);
       solvePose(this.pose, entry.phase, action === 'sit' ? 0 : walk, run, elapsed, entry.seed * 0.017, action);
-      this.root.x = resident.x; this.root.z = resident.z; this.root.y = 0;
+      this.root.x = resident.x; this.root.z = resident.z;
+      this.root.y = this.ground(resident.x, resident.z);
       this.root.heading = heading;
       this.root.scale = entry.outfit.scale;
       this.root.headScale = entry.outfit.headScale;
@@ -114,7 +117,7 @@ export class Crowd {
       const wetSwap = weather === 'rain' && outfit.accessory === 'none' && entry.seed % 3 === 0;
       if (wetSwap) outfit.accessory = 'umbrella';
       else if (weather !== 'rain' && outfit.accessory === 'umbrella' && entry.seed % 3 === 0) outfit.accessory = 'none';
-      writePerson(this.meshes, this.skeleton, outfit);
+      writePerson(this.meshes, this.skeleton, outfit, this.root);
     }
     this.meshes.flush();
   }

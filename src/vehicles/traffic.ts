@@ -3,6 +3,7 @@ import { LIGHT_MATERIAL, vehicleModel, type VehicleKind } from './models';
 import { clamp, distance } from '../core/geometry';
 import type { Vec2, PlayerState, Weather } from '../core/types';
 import type { QualityProfile } from '../render/quality';
+import { contactShadowGeometry, contactShadowMaterial } from '../world/materials';
 
 export interface Vehicle extends Vec2 {
   id: string; kind: VehicleKind; group: T.Group; heading: number; speed: number;
@@ -26,9 +27,16 @@ export class Traffic {
   controlled: Vehicle | null = null;
   signalPhase = 0;
   private lightLevel = 0;
+  private shadows: T.InstancedMesh;
+  private shadowDummy = new T.Object3D();
 
   constructor(profile: QualityProfile) {
     const moving = 44;
+    this.shadows = new T.InstancedMesh(contactShadowGeometry(), contactShadowMaterial(), moving + 8);
+    this.shadows.instanceMatrix.setUsage(T.DynamicDrawUsage);
+    this.shadows.frustumCulled = false;
+    this.shadows.renderOrder = 1;
+    this.group.add(this.shadows);
     for (let i = 0; i < moving; i++) {
       const ax = i % 4, az = Math.floor(i / 4) % 4;
       const x = ROADS[ax], z = ROADS[az];
@@ -102,6 +110,7 @@ export class Traffic {
     blocked: (x: number, z: number, r?: number) => boolean, onCollision: (x: number, z: number) => void) {
     this.signalPhase = Math.floor(t / 13) % 2;
     const grip = weather === 'rain' ? 0.78 : 1;
+    let shadowCount = 0;
 
     for (const v of this.vehicles) {
       if (!v.active && v !== this.controlled) continue;
@@ -161,9 +170,22 @@ export class Traffic {
 
       v.group.position.set(v.x, 0, v.z);
       v.group.rotation.set(v.pitch, v.heading, v.lean);
+      // A soft patch under each vehicle keeps it planted on the road.
+      this.shadowDummy.position.set(v.x, 0.04, v.z);
+      this.shadowDummy.rotation.set(0, v.heading, 0);
+      this.shadowDummy.scale.set(2.4, 1, v.length * 1.25);
+      this.shadowDummy.updateMatrix();
+      this.shadows.setMatrixAt(shadowCount++, this.shadowDummy.matrix);
       // Two-wheelers lean into the corner properly.
       if (v.kind === 'motorcycle' || v.kind === 'scooter' || v.kind === 'bicycle') v.group.rotation.z = v.lean * 2.4;
     }
+    this.publishShadows(shadowCount);
+  }
+
+  /** Called at the end of each traffic update to publish the shadow instances. */
+  private publishShadows(count: number) {
+    this.shadows.count = count;
+    this.shadows.instanceMatrix.needsUpdate = true;
   }
 
   serialize() { return this.vehicles.map(({ id, x, z, heading, fuel, damage, parked, target }) => ({ id, x, z, heading, fuel, damage, parked, target })); }

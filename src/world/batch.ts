@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import type { Collider } from '../core/types';
 
 /** Static city details share instanced geometry; individual buildings add no draw calls. */
 export class CityBatch {
@@ -19,8 +21,23 @@ export class CityBatch {
     tube: new THREE.CylinderGeometry(0.5, 0.5, 1, 8, 1, true),
     dome: new THREE.SphereGeometry(0.5, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2),
     pyramid: new THREE.ConeGeometry(0.5, 1, 4),
+    /** Three quads crossed through the origin: a cheap volume of leaves. */
+    leaf: crossedQuads(3),
+    /** A single ground-facing quad, for contact shadows and decals. */
+    ground: groundQuad(),
   };
-  constructor(public group: THREE.Group) {}
+  constructor(public group: THREE.Group, public colliders: Collider[] = []) {}
+
+  /**
+   * Marks a footprint as solid. Street furniture that you can see should be
+   * street furniture you cannot stroll through.
+   */
+  block(x: number, z: number, width: number, depth: number, angle = 0) {
+    const cos = Math.abs(Math.cos(angle)); const sin = Math.abs(Math.sin(angle));
+    const halfWidth = (width * cos + depth * sin) / 2;
+    const halfDepth = (width * sin + depth * cos) / 2;
+    this.colliders.push({ minX: x - halfWidth, maxX: x + halfWidth, minZ: z - halfDepth, maxZ: z + halfDepth });
+  }
   add(shape: keyof CityBatch['geometries'], material: THREE.Material, x: number, y: number, z: number, sx: number, sy: number, sz: number, color: THREE.ColorRepresentation = '#ffffff', ry = 0, rx = 0, rz = 0) {
     const key = shape + material.uuid;
     let bucket = this.buckets.get(key);
@@ -31,6 +48,10 @@ export class CityBatch {
     bucket.colors.push(new THREE.Color(color));
   }
   box(material: THREE.Material, x: number, y: number, z: number, sx: number, sy: number, sz: number, color: THREE.ColorRepresentation = '#ffffff', ry = 0) { this.add('box', material, x, y, z, sx, sy, sz, color, ry); }
+  /** A soft dark patch on the ground: the cheapest way to sit an object in its place. */
+  contact(material: THREE.Material, x: number, z: number, radius: number, strength = 1, y = 0.035) {
+    this.add('ground', material, x, y, z, radius * 2, 1, radius * 2, new THREE.Color(strength, strength, strength));
+  }
   cylinder(material: THREE.Material, x: number, y: number, z: number, sx: number, sy: number, sz: number, color: THREE.ColorRepresentation = '#ffffff') { this.add('cylinder', material, x, y, z, sx, sy, sz, color); }
   /** A flat decal lying on the ground - road paint, rangoli, spilled water. */
   decal(material: THREE.Material, x: number, y: number, z: number, sx: number, sz: number, color: THREE.ColorRepresentation = '#ffffff', ry = 0) { this.add('plane', material, x, y, z, sx, sz, 1, color, 0, -Math.PI / 2, ry); }
@@ -55,6 +76,26 @@ export class CityBatch {
     }
     this.buckets.clear();
   }
+}
+
+/** Crossed billboards read as a volume of foliage from any angle, for three quads' cost. */
+function crossedQuads(count: number) {
+  const parts: THREE.BufferGeometry[] = [];
+  for (let i = 0; i < count; i++) {
+    const quad = new THREE.PlaneGeometry(1, 1);
+    quad.rotateY((i / count) * Math.PI);
+    quad.rotateX(i === 2 ? Math.PI / 2 : 0);
+    parts.push(quad);
+  }
+  const merged = mergeGeometries(parts)!;
+  parts.forEach(part => part.dispose());
+  return merged;
+}
+
+function groundQuad() {
+  const quad = new THREE.PlaneGeometry(1, 1);
+  quad.rotateX(-Math.PI / 2);
+  return quad;
 }
 
 export function seededRandom(seed: number) {

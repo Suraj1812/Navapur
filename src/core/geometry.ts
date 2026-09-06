@@ -9,7 +9,7 @@ export class ModelBuilder {
 
  /** Merge into a mesh that uses a caller-supplied shared material (lamps, lenses). */
  buildWith(material:T.Material){if(!this.parts.length)return null;const g=mergeGeometries(this.parts);this.parts.forEach(p=>p.dispose());this.parts=[];const m=new T.Mesh(g,material);return m;}
- build(){const g=mergeGeometries(this.parts);this.parts.forEach(p=>p.dispose());const m=new T.Mesh(g,new T.MeshStandardMaterial({vertexColors:true,roughness:.65,metalness:.14}));m.castShadow=true;m.receiveShadow=true;return m;}
+ build(material?:T.Material){const g=mergeGeometries(this.parts);this.parts.forEach(p=>p.dispose());this.parts=[];const m=new T.Mesh(g,material??new T.MeshStandardMaterial({vertexColors:true,roughness:.65,metalness:.14}));m.castShadow=true;m.receiveShadow=true;return m;}
 }
 export const clamp=(x:number,a:number,b:number)=>Math.max(a,Math.min(b,x));
 export const distance=(a:{x:number,z:number},b:{x:number,z:number})=>Math.hypot(a.x-b.x,a.z-b.z);

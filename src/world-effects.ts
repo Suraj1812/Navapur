@@ -37,7 +37,13 @@ export class Environment {
   private lightningTimer = 6;
   private dummy = new T.Object3D();
   private lastLighting = -1;
+  private hauntLevel = 0;
   private sunTarget = new T.Object3D();
+  private sunDirection = new T.Vector3(-0.62, 0.8, 0.32).normalize();
+  private pmrem: T.PMREMGenerator | null = null;
+  private probe: T.WebGLRenderTarget | null = null;
+  private probeScene = new T.Scene();
+  private probeKey = '';
 
   constructor(private scene: T.Scene, private profile: QualityProfile = QUALITY_PROFILES.high) {
     scene.add(this.sun, this.moon, this.hemisphere, this.bounce, this.sunTarget, this.fireLight, this.lightning);
@@ -100,13 +106,13 @@ export class Environment {
     const geometry = new T.BufferGeometry();
     geometry.setAttribute('position', new T.BufferAttribute(this.rainPositions, 3));
     this.rain = new T.Points(geometry, new T.PointsMaterial({
-      color: '#e2ecef', size: 0.11, transparent: true, opacity: 0.55, depthWrite: false, sizeAttenuation: true,
+      color: '#e6eff2', size: 0.14, transparent: true, opacity: 0.62, depthWrite: false, sizeAttenuation: true,
     }));
     this.rain.frustumCulled = false;
     this.rain.visible = false;
     this.scene.add(this.rain);
 
-    const ring = new T.RingGeometry(0.05, 0.3, 10);
+    const ring = new T.RingGeometry(0.26, 0.32, 14);
     ring.rotateX(-Math.PI / 2);
     this.splash = new T.InstancedMesh(ring, new T.MeshBasicMaterial({ color: '#dbe7ea', transparent: true, opacity: 0.3, depthWrite: false }), 64);
     this.splash.frustumCulled = false;
@@ -186,6 +192,36 @@ export class Environment {
     this.scene.add(this.dust);
   }
 
+  /**
+   * Lights the whole city from the sky it is actually standing under, rather
+   * than from a generic indoor probe. Rebuilt only when the sun has moved
+   * enough to matter, so it costs a few milliseconds an hour of city time.
+   */
+  attachRenderer(renderer: T.WebGLRenderer) {
+    this.pmrem = new T.PMREMGenerator(renderer);
+    this.pmrem.compileEquirectangularShader();
+  }
+
+  private refreshProbe(elevation: number, weather: Weather) {
+    if (!this.pmrem) return;
+    const key = `${Math.round(elevation * 7)}:${weather}`;
+    if (key === this.probeKey) return;
+    this.probeKey = key;
+    const parent = this.sky.parent;
+    this.probeScene.add(this.sky);
+    const generated = this.pmrem.fromScene(this.probeScene, 0.02);
+    this.probe?.dispose();
+    this.probe = generated;
+    this.scene.environment = generated.texture;
+    if (parent) parent.add(this.sky);
+  }
+
+  /** After midnight the birds are replaced by something that flies lower. */
+  setHaunting(level: number) {
+    this.hauntLevel = level;
+    (this.birds.material as T.MeshBasicMaterial).color.set(level > 0.3 ? '#191d1b' : '#3d423b');
+  }
+
   setQuality(profile: QualityProfile) {
     this.profile = profile;
     this.configureShadow();
@@ -202,16 +238,17 @@ export class Environment {
 
     if (Math.abs(time - this.lastLighting) > 0.25 || this.lastLighting < 0) {
       this.lastLighting = time;
-      const sunDirection = new T.Vector3(-0.62, elevation, 0.32).normalize();
-      this.sky.material.uniforms.sunPosition.value.copy(sunDirection);
+      this.sunDirection.set(-0.62, elevation, 0.32).normalize();
+      this.sky.material.uniforms.sunPosition.value.copy(this.sunDirection);
       const weatherScale = weather === 'clear' ? 1 : weather === 'cloudy' ? 0.5 : 0.24;
-      this.sun.intensity = daylight * 3.5 * weatherScale + 0.02;
-      this.sun.color.set(golden > 0.4 ? '#ffbe7d' : daylight > 0.5 ? '#fff0d4' : '#9cadd6');
-      this.bounce.intensity = daylight * 0.45 * weatherScale;
+      this.sun.intensity = daylight * 3.9 * weatherScale + 0.02;
+      this.sun.color.set(golden > 0.4 ? '#ffb977' : daylight > 0.5 ? '#fff4dd' : '#9cadd6');
+      this.bounce.intensity = daylight * 0.6 * weatherScale;
       this.bounce.color.set('#d8b183');
       this.bounce.position.set(-40, 12, -30);
       this.moon.intensity = this.nightAmount * 0.55;
-      this.hemisphere.intensity = 0.14 + daylight * (weather === 'rain' ? 0.95 : 1.55) + this.nightAmount * 0.1;
+      // The sky probe now carries the ambient; the hemisphere only tints the bounce.
+      this.hemisphere.intensity = 0.14 + daylight * (weather === 'rain' ? 0.62 : 0.95) + this.nightAmount * 0.1;
       this.hemisphere.color.set(weather === 'rain' ? '#93a3a7' : daylight > 0.35 ? '#bcd7e0' : '#41506b');
       this.hemisphere.groundColor.set(weather === 'rain' ? '#5c625f' : '#7d6b56');
       this.sky.material.uniforms.turbidity.value = weather === 'rain' ? 16 : weather === 'cloudy' ? 9.5 : 3.6 + golden * 5;
@@ -221,19 +258,31 @@ export class Environment {
       const fog = this.scene.fog as T.FogExp2;
       const horizon = weather === 'rain' ? RAIN_HORIZON : golden > 0.35 ? DUSK_HORIZON : daylight < 0.2 ? NIGHT_HORIZON : DAY_HORIZON;
       fog.color.copy(horizon).lerp(NIGHT_HORIZON, this.nightAmount * 0.72);
-      fog.density = (weather === 'rain' ? 0.0085 : weather === 'cloudy' ? 0.0038 : 0.0026) + this.nightAmount * 0.0022;
-      this.scene.environmentIntensity = this.profile.environmentIntensity * (0.35 + daylight * 0.85);
+      fog.density = (weather === 'rain' ? 0.0085 : weather === 'cloudy' ? 0.0038 : 0.0026) + this.nightAmount * 0.0022 + this.hauntLevel * 0.006;
+      // Sky radiance is an order of magnitude brighter than an indoor probe.
+      this.scene.environmentIntensity = this.profile.environmentIntensity * (0.05 + daylight * 0.13) * (weather === 'rain' ? 0.7 : 1);
 
         (this.stars.material as T.PointsMaterial).opacity = this.nightAmount * (weather === 'clear' ? 0.85 : 0.15);
       (this.moonMesh.material as T.MeshBasicMaterial).opacity = this.nightAmount * (weather === 'rain' ? 0.15 : 0.9);
       (this.clouds.material as T.MeshStandardMaterial).opacity = weather === 'rain' ? 0.82 : weather === 'cloudy' ? 0.7 : 0.42;
       (this.clouds.material as T.MeshStandardMaterial).color.set(weather === 'rain' ? '#6f757a' : daylight < 0.25 ? '#3b4453' : golden > 0.4 ? '#ffd9b4' : '#fbfaf6');
+      this.refreshProbe(elevation, weather);
     }
 
-    // The shadow frustum follows the player so the map stays crisp everywhere.
+    // The shadow frustum follows the player, and the light comes from where the
+    // sun actually is - so shadows lengthen and swing round as the day passes.
     const reach = this.profile.shadowDistance;
-    this.sun.position.set(player.x - reach * 0.85, reach * 1.25 + Math.max(0, elevation) * reach, player.z + reach * 0.7);
-    this.moon.position.set(player.x + reach, reach * 1.3, player.z - reach * 0.6);
+    const lift = Math.max(0.16, this.sunDirection.y);
+    this.sun.position.set(
+      player.x + this.sunDirection.x * reach * 1.9,
+      lift * reach * 1.9,
+      player.z + this.sunDirection.z * reach * 1.9,
+    );
+    this.moon.position.set(
+      player.x - this.sunDirection.x * reach * 1.6,
+      Math.max(0.4, -this.sunDirection.y + 0.5) * reach * 1.6,
+      player.z - this.sunDirection.z * reach * 1.6,
+    );
     this.sunTarget.position.set(player.x, 0, player.z);
     this.sky.position.set(player.x, 0, player.z);
     this.moonMesh.position.set(player.x + 780, 320 + Math.sin(angle + Math.PI) * 160, player.z - 620);
@@ -277,33 +326,50 @@ export class Environment {
     this.rain.geometry.attributes.position.needsUpdate = true;
     if (!this.splash.visible) return;
     for (let i = 0; i < this.splash.count; i++) {
-      const phase = (elapsed * 2.4 + i * 0.61) % 1;
+      const phase = (elapsed * 2.9 + i * 0.61) % 1;
       const seed = Math.sin(i * 91.7) * 43758.5453;
-      const ox = ((seed - Math.floor(seed)) - 0.5) * 26;
-      const oz = ((Math.sin(i * 31.3) * 0.5 + 0.5) - 0.5) * 26;
-      this.dummy.position.set(player.x + ox, 0.05, player.z + oz);
-      this.dummy.scale.setScalar(0.2 + phase * 1.3);
+      const ox = ((seed - Math.floor(seed)) - 0.5) * 22;
+      const oz = ((Math.sin(i * 31.3) * 0.5 + 0.5) - 0.5) * 22;
+      // A ring that opens and vanishes, rather than a shape that lingers.
+      const size = phase < 0.72 ? 0.18 + phase * 0.72 : 0;
+      this.dummy.position.set(player.x + ox, 0.045, player.z + oz);
+      this.dummy.scale.set(size, size, size);
       this.dummy.updateMatrix();
       this.splash.setMatrixAt(i, this.dummy.matrix);
     }
-    (this.splash.material as T.MeshBasicMaterial).opacity = 0.26;
+    (this.splash.material as T.MeshBasicMaterial).opacity = 0.4;
     this.splash.instanceMatrix.needsUpdate = true;
   }
 
   private updateBirds(elapsed: number, daylight: number, weather: Weather, player: { x: number; z: number }) {
     const count = this.birds.count || this.profile.birds;
-    this.birds.visible = daylight > 0.12 && weather !== 'rain';
+    const bats = this.hauntLevel > 0.25;
+    this.birds.visible = (daylight > 0.12 && weather !== 'rain') || bats;
     if (!this.birds.visible) return;
     for (let i = 0; i < count; i++) {
       const lane = Math.floor(i / 6);
-      const a = elapsed * (0.09 + lane * 0.015) + i * 0.9;
-      const radius = 48 + lane * 26;
-      const x = player.x + Math.sin(a) * radius;
-      const z = player.z + Math.cos(a) * radius;
-      const y = 22 + lane * 7 + Math.sin(elapsed * 0.7 + i) * 2.4;
-      this.dummy.position.set(x, y, z);
-      this.dummy.rotation.set(0, a + Math.PI / 2, Math.sin(elapsed * 9 + i) * 0.55);
-      this.dummy.scale.setScalar(1.1);
+      if (bats) {
+        // Bats do not circle. They stutter.
+        const a = elapsed * (0.5 + lane * 0.2) + i * 2.1;
+        const radius = 14 + lane * 9 + Math.sin(elapsed * 1.7 + i) * 5;
+        this.dummy.position.set(
+          player.x + Math.sin(a) * radius + Math.sin(elapsed * 5 + i) * 2.4,
+          7 + lane * 3 + Math.sin(elapsed * 3.4 + i * 2) * 2.6,
+          player.z + Math.cos(a) * radius + Math.cos(elapsed * 4.3 + i) * 2.4,
+        );
+        this.dummy.rotation.set(Math.sin(elapsed * 6 + i) * 0.4, a + Math.PI / 2, Math.sin(elapsed * 22 + i) * 0.9);
+        this.dummy.scale.setScalar(0.65);
+      } else {
+        const a = elapsed * (0.09 + lane * 0.015) + i * 0.9;
+        const radius = 48 + lane * 26;
+        this.dummy.position.set(
+          player.x + Math.sin(a) * radius,
+          22 + lane * 7 + Math.sin(elapsed * 0.7 + i) * 2.4,
+          player.z + Math.cos(a) * radius,
+        );
+        this.dummy.rotation.set(0, a + Math.PI / 2, Math.sin(elapsed * 9 + i) * 0.55);
+        this.dummy.scale.setScalar(1.1);
+      }
       this.dummy.updateMatrix();
       this.birds.setMatrixAt(i, this.dummy.matrix);
     }

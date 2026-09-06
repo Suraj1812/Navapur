@@ -7,7 +7,7 @@ import { blockDistrict, districts, storefronts, type Storefront } from './data';
 import { createMaterials, SignAtlas } from './materials';
 import {
   acUnit, barricade, bench, bunting, busShelter, cableKnot, cycleRack, dustbin, foodStall, handCart,
-  hoarding, laundryLine, marketCart, median, paanShop, posterWall, potPlant, rangoli, scaffolding,
+  backCourt, hoarding, laundryLine, marketCart, median, paanShop, posterWall, potPlant, rangoli, scaffolding,
   speedBreaker, streetLamp, trafficSignal, tree, tyreStack, utilityWires, waterTank, type TreeKind,
 } from './props';
 
@@ -16,8 +16,8 @@ const ROADS = [-144, -72, 0, 72, 144];
 export function createWorld(profile: QualityProfile): World {
   const group = new THREE.Group(); group.name = 'Navapur — procedural city';
   const random = seededRandom(84172); const materials = createMaterials(profile);
-  const batch = new CityBatch(group); const signs = new SignAtlas();
   const colliders: Collider[] = []; const places: Place[] = [];
+  const batch = new CityBatch(group, colliders); const signs = new SignAtlas();
   const lamps: THREE.Mesh[] = []; const signals: THREE.Mesh[] = [];
   let lampBudget = profile.lampLights;
   const addPlace = (id: string, name: string, hindi: string, kind: Place['kind'], district: string, x: number, z: number) => {
@@ -25,13 +25,32 @@ export function createWorld(profile: QualityProfile): World {
   };
 
   /* -------------------------------------------------- ground & roads */
-  batch.box(materials.dirt, 0, -0.2, 0, 1900, 0.3, 1900, '#9c9174');
-  batch.box(materials.road, 0, -0.02, 0, 368, 0.08, 368);
+  // Big flat areas get their own meshes at a true texel density; instancing a
+  // unit cube here would stretch one tile across sixty metres.
+  const surface = (material: THREE.Material, size: number, y: number, x = 0, z = 0, tint?: string) => {
+    const geometry = new THREE.PlaneGeometry(size, size);
+    geometry.rotateX(-Math.PI / 2);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x, y, z);
+    mesh.receiveShadow = true;
+    if (tint) (material as THREE.MeshStandardMaterial).color.set(tint);
+    group.add(mesh);
+    return mesh;
+  };
+  const groundMaterial = materials.scaled(materials.dirt, 260);
+  const roadSurface = materials.scaled(materials.road, 92);
+  const pavingSurface = materials.scaled(materials.paving, 29);
+  const courtSurface = materials.scaled(materials.concrete, 24);
+  courtSurface.color.set('#9a9b86');
+  surface(groundMaterial, 1900, -0.06);
+  surface(roadSurface, 368, 0.015);
 
   for (let iz = 0; iz < 4; iz++) for (let ix = 0; ix < 4; ix++) {
     const cx = ROADS[ix] + 36; const cz = ROADS[iz] + 36;
     batch.box(materials.paving, cx, 0.06, cz, 58, 0.12, 58);
+    surface(pavingSurface, 58, 0.121, cx, cz);
     batch.box(materials.concrete, cx, 0.09, cz, 47.8, 0.12, 47.8, '#9a9b86');
+    surface(courtSurface, 47.8, 0.151, cx, cz);
     // Painted curb stones, storm drains and footpath joints.
     for (let edge = 0; edge < 4; edge++) for (let stone = 0; stone < 29; stone++) {
       const along = -28 + stone * 2;
@@ -70,9 +89,9 @@ export function createWorld(profile: QualityProfile): World {
     }
     // Speed breakers before every school and market crossing, and a painted median.
     for (const segment of ROADS) {
-      if (Math.abs(road) > 72) continue;
-      speedBreaker(batch, materials, road, segment + 24, false);
-      speedBreaker(batch, materials, segment + 24, road, true);
+      if (Math.abs(road) > 72 || Math.abs(segment) > 72) continue;
+      speedBreaker(batch, materials, road, segment + 30, false);
+      speedBreaker(batch, materials, segment + 30, road, true);
     }
     for (let segment = 0; segment < 4; segment++) {
       // Only the arterial roads are divided; the old bazaar street stays open.
@@ -152,14 +171,15 @@ export function createWorld(profile: QualityProfile): World {
       }
       if (district.id === 'shopping' && slot === 3) cycleRack(batch, materials, base.x + Math.sin(base.angle) * 3.6, base.z + Math.cos(base.angle) * 3.6 + 3.5, base.angle + Math.PI / 2, 4);
       if (district.id === 'industrial' && slot === 2) { tyreStack(batch, materials, base.x + Math.sin(base.angle) * 3, base.z + Math.cos(base.angle) * 3 + 2, 5); handCart(batch, materials, base.x + Math.sin(base.angle) * 3.4, base.z + Math.cos(base.angle) * 3.4 - 3, base.angle); }
-      if (slot === 5 && random() < 0.4) scaffolding(batch, materials, base.x + Math.sin(base.angle) * (base.depth / 2 + 0.9), base.z + Math.cos(base.angle) * (base.depth / 2 + 0.9), base.width - 1, Math.min(height, 9), base.angle + Math.PI / 2);
+      if (slot === 5 && random() < 0.35) scaffolding(batch, materials, base.x + Math.sin(base.angle) * 0.85, base.z + Math.cos(base.angle) * 0.85, base.width - 1.6, Math.min(height, 9), base.angle);
       if (!homes && slot % 3 === 2) dustbin(batch, materials, base.x + Math.sin(base.angle) * 3.5 + Math.cos(base.angle) * 6, base.z + Math.cos(base.angle) * 3.5 - Math.sin(base.angle) * 6);
     }
 
-    // Quiet inner courts soften the dense street perimeter.
+    // The inside of the block is a working yard, not an empty plaza.
+    backCourt(batch, materials, cx, cz, random, district.id === 'industrial');
     if (district.id !== 'industrial') {
-      tree(batch, materials, cx, cz, 6.5 + random() * 2.5, random, treeKinds[Math.floor(random() * treeKinds.length)]);
-      bench(batch, materials, cx + 4, cz + 2, Math.PI / 2);
+      tree(batch, materials, cx - 6, cz + 6, 6.5 + random() * 2.5, random, treeKinds[Math.floor(random() * treeKinds.length)]);
+      bench(batch, materials, cx + 6.5, cz - 2, Math.PI / 2);
       if (market) bunting(batch, materials, cx - 14, cz - 4, cx + 14, cz - 4, 6.4);
     } else {
       for (let stack = 0; stack < 5; stack++) batch.box(materials.corrugated, cx - 6 + stack * 3, 1.4, cz, 2.7, 2.6, 6.5, ['#966a4d', '#647872', '#807961'][stack % 3]);
@@ -174,6 +194,7 @@ export function createWorld(profile: QualityProfile): World {
   buildTemple(batch, materials, signs, group, colliders, addPlace);
   buildMosque(batch, materials, signs, colliders, addPlace);
   buildChurch(batch, materials, colliders, addPlace);
+  const ghatSmoke = buildGhat(batch, materials, signs, group, colliders, addPlace, random);
 
   /* -------------------------------------------------- street furniture */
   for (const road of ROADS) for (let segment = 0; segment < 4; segment++) {
@@ -244,9 +265,28 @@ export function createWorld(profile: QualityProfile): World {
   return {
     group, places, colliders, districts, roadCoordinates: [...ROADS], lamps, signals,
     roadMaterial: materials.road, bounds: 178,
-    update(time, weather, elapsed) {
+    /**
+     * People stand on the ground, not through it. Every block is a raised
+     * platform: a kerb at the edge and a slightly higher court inside, with the
+     * carriageway between them.
+     */
+    groundHeight(x, z) {
+      for (let iz = 0; iz < 4; iz++) {
+        const cz = ROADS[iz] + 36;
+        if (Math.abs(z - cz) > 29) continue;
+        for (let ix = 0; ix < 4; ix++) {
+          const cx = ROADS[ix] + 36;
+          if (Math.abs(x - cx) > 29) continue;
+          const inside = Math.abs(x - cx) < 23.9 && Math.abs(z - cz) < 23.9;
+          return inside ? 0.151 : 0.121;
+        }
+      }
+      return 0.015;
+    },
+    update(time, weather, elapsed, haunting = 0) {
+      ghatSmoke(elapsed, haunting);
       const night = time < 360 || time > 1110; const dusk = time > 1050 && time <= 1110;
-      materials.light.emissiveIntensity = night ? 2.4 : dusk ? 0.95 : 0.15;
+      materials.light.emissiveIntensity = (night ? 2.4 : dusk ? 0.95 : 0.15) * (1 - haunting * 0.45);
       materials.warmGlass.emissiveIntensity = night ? 0.62 : dusk ? 0.24 : 0.035;
       materials.neon.emissiveIntensity = night ? 1.6 : dusk ? 0.7 : 0.12;
       if (signMaterial) signMaterial.emissiveIntensity = night ? 0.5 : 0.14;
@@ -327,7 +367,7 @@ function buildPark(batch: CityBatch, m: ReturnType<typeof createMaterials>, sign
     batch.box(m.metal, ppx, 0.92, ppz, 0.07, 1.55, 0.07, '#4b5c4a');
     if (post % 6 === 0) batch.box(m.metal, ppx, 1.62, ppz, edge < 2 ? 6 : 0.07, 0.07, edge < 2 ? 0.07 : 6, '#4b5c4a');
   }
-  signs.add(group, 'Nehru Gardens', 'नेहरू उद्यान', 'OPEN DAILY • WALK • BREATHE • BELONG', '#46614b', cx, 2.65, top + 12, 8, 1.5, Math.PI);
+  signs.add(group, 'Nehru Gardens', 'नेहरू उद्यान', 'OPEN DAILY • WALK • BREATHE • BELONG', '#46614b', cx, 2.65, top + 12, 8, 1.5, 0);
 }
 
 function buildTemple(batch: CityBatch, m: ReturnType<typeof createMaterials>, signs: SignAtlas, group: THREE.Group, colliders: Collider[], addPlace: (id: string, name: string, hindi: string, kind: Place['kind'], district: string, x: number, z: number) => void) {
@@ -398,3 +438,90 @@ function buildChurch(batch: CityBatch, m: ReturnType<typeof createMaterials>, co
 }
 
 export { acUnit, laundryLine };
+
+/**
+ * The burning ghat at the edge of town: a low wall, three brick pyres, a bamboo
+ * bier under a white shroud with its marigolds, and a thread of smoke that never
+ * quite stops. Nothing is shown that a passer-by would not see; the quiet does
+ * the work.
+ */
+function buildGhat(
+  batch: CityBatch, m: ReturnType<typeof createMaterials>, signs: SignAtlas, group: THREE.Group,
+  colliders: Collider[],
+  addPlace: (id: string, name: string, hindi: string, kind: Place['kind'], district: string, x: number, z: number) => void,
+  random: () => number,
+) {
+  const x = 150; const z = 152;
+  batch.box(m.dirt, x, 0.1, z, 40, 0.2, 34, '#8f8168');
+  batch.box(m.paving, x, 0.16, z, 26, 0.14, 22, '#b0a892');
+  // A boundary wall with a gate, and a peepal at the corner.
+  for (const side of [-1, 1]) {
+    batch.box(m.brick, x + side * 13, 1.1, z, 0.6, 2.2, 22, '#9a7358');
+    batch.box(m.concrete, x + side * 13, 2.28, z, 0.8, 0.18, 22, '#b8b1a0');
+  }
+  batch.box(m.brick, x, 1.1, z - 11, 26, 2.2, 0.6, '#9a7358');
+  batch.box(m.concrete, x, 2.28, z - 11, 26.4, 0.18, 0.8, '#b8b1a0');
+  colliders.push({ minX: x - 13.4, maxX: x - 12.6, minZ: z - 11, maxZ: z + 11 });
+  colliders.push({ minX: x + 12.6, maxX: x + 13.4, minZ: z - 11, maxZ: z + 11 });
+  tree(batch, m, x - 15.5, z - 13, 8.4, random, 'banyan');
+  tree(batch, m, x + 16, z + 12, 7.2, random, 'neem');
+
+  const pyres = [-7.5, 0, 7.5];
+  pyres.forEach((offset, index) => {
+    const px = x + offset; const pz = z + 2;
+    batch.box(m.brick, px, 0.45, pz, 5.2, 0.6, 3.4, '#8d6a52');
+    batch.box(m.concrete, px, 0.78, pz, 5.6, 0.1, 3.8, '#a49b88');
+    batch.contact(m.contact, px, pz, 3.4, 1, 0.19);
+    if (index === 1) {
+      // The bier: bamboo poles, a white cloth, and the marigolds someone brought.
+      for (const rail of [-0.62, 0.62]) batch.add('cylinder', m.wood, px, 0.95, pz + rail, 0.06, 4.4, 0.06, '#c2ac74', 0, 0, Math.PI / 2);
+      for (let rung = -2; rung <= 2; rung++) batch.add('cylinder', m.wood, px + rung * 0.85, 0.95, pz, 0.05, 1.5, 0.05, '#c2ac74');
+      batch.add('capsule', m.cloth, px, 1.18, pz, 0.62, 2.5, 0.62, '#efe9de', 0, 0, Math.PI / 2);
+      batch.box(m.cloth, px, 1.02, pz, 4.3, 0.1, 1.5, '#e6dfd2');
+      for (let flower = 0; flower < 16; flower++) {
+        batch.add('lowSphere', m.foliage, px - 1.8 + flower * 0.24, 1.34 - Math.abs(flower - 7.5) * 0.012, pz + (flower % 2 ? 0.2 : -0.2),
+          0.14, 0.14, 0.14, flower % 3 === 0 ? '#c8552c' : '#d8942c');
+      }
+    } else {
+      for (let log = 0; log < 5; log++) {
+        batch.add('cylinder', m.dark, px - 1.6 + log * 0.8, 0.94, pz, 0.16, 3, 0.16, log % 2 ? '#3b332c' : '#2c2723', 0, 0, Math.PI / 2);
+      }
+      batch.add('lowSphere', m.dirt, px, 0.86, pz, 3.4, 0.4, 2.4, '#5a5248');
+    }
+  });
+
+  // Water pot, a broom, the small ordinary things.
+  batch.add('cylinder', m.tile, x - 10, 0.55, z + 8, 0.7, 0.9, 0.7, '#8d5a3a');
+  batch.add('cylinder', m.metal, x - 10, 1.02, z + 8, 0.76, 0.06, 0.76, '#a8ab9f');
+  batch.contact(m.contact, x - 10, z + 8, 0.8, 1, 0.2);
+  signs.add(group, 'Shanti Ghat', 'शांति घाट', 'A PLACE TO SAY GOODBYE', '#5a4a3c', x, 2.9, z - 11.4, 7, 1.2, Math.PI);
+  addPlace('shanti-ghat', 'Shanti Ghat', 'शांति घाट', 'temple', 'Navapur Junction', x, z - 13);
+
+  // A thread of smoke, always. It thickens when the night turns.
+  const count = 90;
+  const positions = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = x + (i % 3 - 1) * 7.5;
+    positions[i * 3 + 1] = (i / count) * 14;
+    positions[i * 3 + 2] = z + 2;
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const smoke = new THREE.Points(geometry, new THREE.PointsMaterial({
+    color: '#8d8478', size: 1.9, transparent: true, opacity: 0.16, depthWrite: false, sizeAttenuation: true,
+  }));
+  smoke.frustumCulled = false;
+  group.add(smoke);
+
+  return (elapsed: number, haunting: number) => {
+    for (let i = 0; i < count; i++) {
+      let y = positions[i * 3 + 1] + 0.0075 * (1 + (i % 5) * 0.2);
+      if (y > 15) y -= 15;
+      positions[i * 3 + 1] = y;
+      positions[i * 3] = x + (i % 3 - 1) * 7.5 + Math.sin(elapsed * 0.3 + i) * (0.4 + y * 0.16);
+      positions[i * 3 + 2] = z + 2 + Math.cos(elapsed * 0.22 + i * 1.7) * (0.3 + y * 0.12);
+    }
+    geometry.attributes.position.needsUpdate = true;
+    (smoke.material as THREE.PointsMaterial).opacity = 0.14 + haunting * 0.16;
+  };
+}

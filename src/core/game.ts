@@ -5,6 +5,7 @@ import { Simulation } from '../simulation/simulation';
 import { PlayerController } from '../player/controller';
 import { Crowd } from '../player/characters';
 import { Animals } from '../world/animals';
+import { Haunting } from '../world/haunting';
 import { Traffic } from '../vehicles/traffic';
 import { Environment } from '../world-effects';
 import { Soundscape } from '../audio/soundscape';
@@ -31,6 +32,7 @@ export class Game {
   traffic: Traffic;
   crowd: Crowd;
   animals: Animals;
+  haunting: Haunting;
   audio = new Soundscape();
   environment: Environment;
   player: PlayerController;
@@ -63,6 +65,7 @@ export class Game {
   private notices = 0;
   private booted = false;
   private shadowTick = 0;
+  private hauntWarned = false;
 
   /** Start-up timings, printed to the console with `?perf=1`. */
   readonly bootTiming: Array<[string, number]> = [];
@@ -85,8 +88,10 @@ export class Game {
 
     this.renderer = new T.WebGLRenderer({ antialias: this.profile.antialias === 'none', powerPreference: 'high-performance', stencil: false });
     this.renderer.setSize(innerWidth, innerHeight);
+    // ACES suits this palette: warm mid-tones, highlights that roll off rather
+    // than clip, and it keeps the sky's blue from flattening the whole street.
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 0.94;
+    this.renderer.toneMappingExposure = 1.12;
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     applyProfile(this.renderer, this.profile);
     const canvas = this.renderer.domElement;
@@ -107,9 +112,18 @@ export class Game {
 
     this.crowd = this.stage('crowd', () => new Crowd(this.profile));
     this.animals = this.stage('animals', () => new Animals(this.profile, this.world.roadCoordinates));
-    this.scene.add(this.world.group, this.traffic.group, this.crowd.group, this.animals.group);
-    this.environment = this.stage('sky and weather', () => new Environment(this.scene, this.profile));
+    this.haunting = this.stage('after midnight', () => new Haunting(this.profile));
+    this.scene.add(this.world.group, this.traffic.group, this.crowd.group, this.animals.group, this.haunting.group);
+    this.environment = this.stage('sky and weather', () => {
+      const environment = new Environment(this.scene, this.profile);
+      environment.attachRenderer(this.renderer);
+      return environment;
+    });
     this.player = new PlayerController(this.camera, canvas, this.world.colliders, this.world.bounds);
+    const ground = (x: number, z: number) => this.world.groundHeight(x, z);
+    this.player.ground = ground;
+    this.crowd.ground = ground;
+    this.animals.ground = ground;
     this.scene.add(this.player.avatar.group);
     this.player.reset(this.sim.player);
     this.postfx = new PostFX(this.renderer, this.scene, this.camera, this.profile);
@@ -239,7 +253,6 @@ export class Game {
     this.renderer.setSize(innerWidth, innerHeight);
     this.crowd.setQuality(this.profile);
     this.environment.setQuality(this.profile);
-    this.scene.environmentIntensity = this.profile.environmentIntensity;
     this.postfx.build(this.profile);
     this.postfx.setSize(innerWidth, innerHeight);
     this.postfx.setPixelRatio(this.renderer.getPixelRatio());
@@ -334,7 +347,7 @@ export class Game {
         vehicles: this.traffic.serialize(),
         controlled: this.traffic.controlled?.id ?? null,
         progress: this.progress,
-        settings: { quality: this.quality, timeScale: this.timeScale, audio: this.audio.enabled, follow: this.player.autoFollow },
+        settings: { quality: this.quality, timeScale: this.timeScale, audio: this.audio.enabled, follow: this.player.autoFollow, haunting: this.haunting.enabled },
         waypoint: this.waypoint,
       }));
       if (notify) this.ui.toast('Journey saved on this device.');
@@ -372,6 +385,7 @@ export class Game {
       this.timeScale = [0.5, 1, 10].includes(data.settings?.timeScale) ? data.settings.timeScale : 1;
       this.audio.setEnabled(data.settings?.audio !== false);
       this.player.autoFollow = data.settings?.follow !== false;
+      this.haunting.enabled = data.settings?.haunting !== false;
       this.player.inVehicle = false;
       if (data.controlled) {
         this.traffic.controlled = this.traffic.vehicles.find(v => v.id === data.controlled)!;
@@ -420,7 +434,19 @@ export class Game {
     }
 
     this.environment.update(tick, this.elapsed, this.sim.time, this.sim.weather, this.sim.player, this.sim.events);
-    this.world.update(this.sim.time, this.sim.weather, this.elapsed);
+    // After midnight the city keeps a second set of residents.
+    const haunt = this.haunting.update(tick, this.elapsed, this.sim.time, this.sim.player, this.player.yaw);
+    this.world.update(this.sim.time, this.sim.weather, this.elapsed, haunt.intensity);
+    this.postfx.setHaunting(haunt.intensity * 0.85);
+    this.environment.setHaunting(haunt.intensity);
+    this.audio.setHaunting(haunt.intensity);
+    if (haunt.vanished) this.audio.stinger();
+    if (haunt.appeared && Math.random() < 0.4) this.audio.whisper((Math.random() - 0.5) * 1.6);
+    if (haunt.intensity > 0.35 && !this.hauntWarned) {
+      this.hauntWarned = true;
+      this.ui.toast('Something is not right in Navapur tonight. Keep to the lamplight.');
+    }
+    if (haunt.intensity < 0.05) this.hauntWarned = false;
     this.crowd.update(this.sim.residents, this.sim.player, this.elapsed, Math.max(tick, 0.0001), this.sim.weather);
     this.animals.update(tick, this.elapsed, this.sim.player, (x, z, r) => this.player.blocked(x, z, r));
     this.postfx.setNight(this.environment.nightAmount);

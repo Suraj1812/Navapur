@@ -1,6 +1,7 @@
 import * as T from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { seededRandom } from './batch';
+import { contactShadowGeometry, contactShadowMaterial } from './materials';
 import type { QualityProfile } from '../render/quality';
 
 type Kind = 'cow' | 'dog' | 'goat';
@@ -163,9 +164,12 @@ export class Animals {
   private bodies = new Map<Kind, T.InstancedMesh>();
   private heads = new Map<Kind, T.InstancedMesh>();
   private pigeons: T.InstancedMesh;
+  private shadows: T.InstancedMesh;
   private dummy = new T.Object3D();
   private colour = new T.Color();
   private pigeonSettle = 0;
+  /** Surface height under a point. */
+  ground: (x: number, z: number) => number = () => 0;
 
   constructor(profile: QualityProfile, roads: number[]) {
     this.group.name = 'Navapur street life';
@@ -208,6 +212,12 @@ export class Animals {
       }
     }
 
+    this.shadows = new T.InstancedMesh(contactShadowGeometry(), contactShadowMaterial(), Math.max(1, this.beasts.length));
+    this.shadows.instanceMatrix.setUsage(T.DynamicDrawUsage);
+    this.shadows.frustumCulled = false;
+    this.shadows.renderOrder = 1;
+    this.group.add(this.shadows);
+
     const pigeon = new Shape();
     const bird = new T.SphereGeometry(0.062, 8, 6);
     bird.scale(0.8, 0.85, 1.5); pigeon.add(bird, '#8d939c');
@@ -223,6 +233,7 @@ export class Animals {
 
   update(dt: number, elapsed: number, player: { x: number; z: number }, blocked: (x: number, z: number, r?: number) => boolean) {
     const counters: Record<string, number> = {};
+    let shadowIndex = 0;
     for (const beast of this.beasts) {
       const key = beast.kind;
       const index = counters[key] = (counters[key] ?? 0);
@@ -255,7 +266,8 @@ export class Animals {
       else { beast.rest = 0; beast.speed = 0; }
 
       const grazing = beast.speed < 0.1;
-      const bob = Math.sin(elapsed * (2.6 + beast.seed * 0.01) + beast.seed) * (grazing ? 0.012 : 0.03);
+      const surface = this.ground(beast.x, beast.z);
+      const bob = surface + Math.sin(elapsed * (2.6 + beast.seed * 0.01) + beast.seed) * (grazing ? 0.012 : 0.03);
       const gait = Math.sin(elapsed * 7 + beast.seed) * beast.speed * 0.045;
 
       const body = this.bodies.get(beast.kind)!;
@@ -269,11 +281,11 @@ export class Animals {
 
       const neck = beast.kind === 'cow' ? { y: 1.05, z: 0.78 } : beast.kind === 'dog' ? { y: 0.46, z: 0.32 } : { y: 0.52, z: 0.3 };
       const graze = grazing ? Math.max(0, Math.sin(elapsed * 0.5 + beast.seed)) * (beast.kind === 'cow' ? 0.85 : 0.7) : 0;
-      const lift = neck.y - graze * (neck.y - (beast.kind === 'cow' ? 0.28 : 0.16));
+      const lift = surface + neck.y - graze * (neck.y - (beast.kind === 'cow' ? 0.28 : 0.16));
       const forward = neck.z + graze * 0.22;
       this.dummy.position.set(
         beast.x + Math.sin(beast.heading) * forward,
-        lift + bob,
+        lift + (bob - surface),
         beast.z + Math.cos(beast.heading) * forward,
       );
       this.dummy.rotation.set(graze * 1.1 + Math.sin(elapsed * 1.4 + beast.seed) * 0.05, beast.heading + Math.sin(elapsed * 0.6 + beast.seed) * 0.22, 0);
@@ -281,7 +293,16 @@ export class Animals {
       this.dummy.updateMatrix();
       head.setMatrixAt(index, this.dummy.matrix);
       head.setColorAt(index, this.colour.copy(beast.tint));
+
+      const size = beast.kind === 'cow' ? 1 : 0.55;
+      this.dummy.position.set(beast.x, surface + 0.04, beast.z);
+      this.dummy.rotation.set(0, beast.heading, 0);
+      this.dummy.scale.set(1.5 * size * beast.scale, 1, 2.6 * size * beast.scale);
+      this.dummy.updateMatrix();
+      this.shadows.setMatrixAt(shadowIndex++, this.dummy.matrix);
     }
+    this.shadows.count = shadowIndex;
+    this.shadows.instanceMatrix.needsUpdate = true;
     for (const mesh of [...this.bodies.values(), ...this.heads.values()]) {
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;

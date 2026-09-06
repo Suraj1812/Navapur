@@ -6,6 +6,15 @@ export type VehicleKind = 'auto' | 'car' | 'bus' | 'truck' | 'motorcycle' | 'sco
 /** Lamps and lenses share one unlit material so night traffic costs nothing extra. */
 export const LIGHT_MATERIAL = new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false, transparent: true, opacity: 0 });
 
+/**
+ * Every vehicle body shares one material: painted metal with a little clearcoat
+ * so the sky actually shows up in it, and one shader compile for the whole fleet.
+ */
+export const BODY_MATERIAL = new T.MeshPhysicalMaterial({
+  vertexColors: true, roughness: 0.42, metalness: 0.28,
+  clearcoat: 0.55, clearcoatRoughness: 0.22, envMapIntensity: 1.5,
+});
+
 const METAL = '#8a9394';
 const BLACK = '#232a28';
 const GLASS = '#5b7a7c';
@@ -160,7 +169,7 @@ export function vehicleModel(kind: VehicleKind, color = '#d7d3c5'): VehicleModel
   }
 
   const group = new T.Group();
-  group.add(b.build());
+  group.add(b.build(BODY_MATERIAL));
   const lightMesh = lights.buildWith(LIGHT_MATERIAL);
   if (lightMesh) { lightMesh.castShadow = false; lightMesh.receiveShadow = false; group.add(lightMesh); }
   return { group, length, width };

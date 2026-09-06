@@ -48,7 +48,7 @@ function paint(kind: Surface, size = 256): SurfaceMaps {
   const a = albedo.ctx; const h = bump.ctx;
 
   const base: Record<Surface, string> = {
-    plaster: '#ded7c6', asphalt: '#3b3f42', paving: '#b6ae9a', brick: '#a86a4d', concrete: '#cfcabb',
+    plaster: '#ded7c6', asphalt: '#3f3d39', paving: '#b6ae9a', brick: '#a86a4d', concrete: '#cfcabb',
     corrugated: '#9aa3a1', wood: '#8a6440', tile: '#a5573c', marble: '#f0ece1', dirt: '#b9a184', fabric: '#e6e1d5',
   };
   a.fillStyle = base[kind]; a.fillRect(0, 0, size, size);
@@ -206,6 +206,84 @@ function textureFrom(source: HTMLCanvasElement, repeat: number, srgb: boolean, a
   return texture;
 }
 
+
+/**
+ * A cluster of individual leaves with a soft alpha edge. Crossed quads carrying
+ * this read as real foliage from any angle, which a smooth green sphere never
+ * does - and it is the single biggest thing standing between a procedural city
+ * and a photograph.
+ */
+function leafTexture(size = 256) {
+  const { canvas, ctx } = canvas2d(size);
+  const random = seededRandom(6041);
+  ctx.clearRect(0, 0, size, size);
+  const greens = ['#3f5c33', '#4d6b38', '#5c7c42', '#6b8c4c', '#37502c', '#79994f'];
+  for (let leaf = 0; leaf < 170; leaf++) {
+    // Cluster towards the middle so the quad's edges fade out naturally.
+    const angle = random() * Math.PI * 2;
+    const spread = Math.pow(random(), 0.62) * size * 0.46;
+    const cx = size / 2 + Math.cos(angle) * spread;
+    const cy = size / 2 + Math.sin(angle) * spread * 0.92;
+    const length = size * (0.055 + random() * 0.06);
+    const width = length * (0.36 + random() * 0.24);
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(random() * Math.PI * 2);
+    ctx.fillStyle = greens[Math.floor(random() * greens.length)];
+    ctx.globalAlpha = 0.72 + random() * 0.28;
+    ctx.beginPath();
+    ctx.moveTo(0, -length / 2);
+    ctx.quadraticCurveTo(width, 0, 0, length / 2);
+    ctx.quadraticCurveTo(-width, 0, 0, -length / 2);
+    ctx.fill();
+    // A lighter midrib catches the sun.
+    ctx.globalAlpha *= 0.5;
+    ctx.strokeStyle = '#8aa763';
+    ctx.lineWidth = Math.max(1, length * 0.06);
+    ctx.beginPath(); ctx.moveTo(0, -length / 2); ctx.lineTo(0, length / 2); ctx.stroke();
+    ctx.restore();
+  }
+  return canvas;
+}
+
+/** A soft radial patch used as a contact shadow beneath anything that sits on the ground. */
+function contactTexture(size = 128) {
+  const { canvas, ctx } = canvas2d(size);
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  gradient.addColorStop(0, 'rgba(0,0,0,0.85)');
+  gradient.addColorStop(0.45, 'rgba(0,0,0,0.5)');
+  gradient.addColorStop(0.78, 'rgba(0,0,0,0.16)');
+  gradient.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  return canvas;
+}
+
+let sharedContact: THREE.MeshBasicMaterial | null = null;
+
+/**
+ * One shared contact-shadow material for the whole city. Cheap, always present,
+ * and it is what stops people, carts and cars looking like stickers hovering a
+ * centimetre above the road.
+ */
+export function contactShadowMaterial() {
+  if (sharedContact) return sharedContact;
+  const texture = new THREE.CanvasTexture(contactTexture());
+  texture.colorSpace = THREE.SRGBColorSpace;
+  sharedContact = new THREE.MeshBasicMaterial({
+    map: texture, transparent: true, opacity: 0.46, depthWrite: false,
+    color: '#000000', polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3,
+  });
+  return sharedContact;
+}
+
+/** The ground-facing unit quad every contact shadow is drawn on. */
+export function contactShadowGeometry() {
+  const quad = new THREE.PlaneGeometry(1, 1);
+  quad.rotateX(-Math.PI / 2);
+  return quad;
+}
+
 export function createMaterials(profile: QualityProfile) {
   const anisotropy = profile.anisotropy;
   const made: THREE.Texture[] = [];
@@ -219,30 +297,38 @@ export function createMaterials(profile: QualityProfile) {
     return { map, normalMap, roughnessMap };
   };
 
-  const plasterMaps = build('plaster', 2, 1.6, 384);
+  const plasterMaps = build('plaster', 6, 1.6, 384);
   const asphaltMaps = build('asphalt', 46, 0.9, 384);
   const pavingMaps = build('paving', 9, 3, 256);
-  const brickMaps = build('brick', 3, 3.4, 256);
-  const concreteMaps = build('concrete', 2.4, 1.2, 256);
-  const corrugatedMaps = build('corrugated', 3, 3.2, 192);
-  const woodMaps = build('wood', 2, 1.6, 192);
-  const tileMaps = build('tile', 4, 3, 192);
-  const marbleMaps = build('marble', 2, 0.8, 192);
+  const brickMaps = build('brick', 8, 3.4, 256);
+  const concreteMaps = build('concrete', 6, 1.2, 256);
+  const corrugatedMaps = build('corrugated', 6, 3.2, 192);
+  const woodMaps = build('wood', 4, 1.6, 192);
+  const tileMaps = build('tile', 7, 3, 192);
+  const marbleMaps = build('marble', 4, 0.8, 192);
   const dirtMaps = build('dirt', 12, 2, 192);
   const fabricMaps = build('fabric', 3, 1, 128);
 
   const standard = (parameters: THREE.MeshStandardMaterialParameters) => new THREE.MeshStandardMaterial(parameters);
 
+  const leafMap = new THREE.CanvasTexture(leafTexture());
+  leafMap.colorSpace = THREE.SRGBColorSpace;
+  leafMap.anisotropy = anisotropy;
+  made.push(leafMap);
+  const contactMap = new THREE.CanvasTexture(contactTexture());
+  contactMap.colorSpace = THREE.SRGBColorSpace;
+  made.push(contactMap);
+
   const materials = {
     plaster: standard({ color: '#ffffff', ...plasterMaps, roughness: 0.95, normalScale: new THREE.Vector2(0.55, 0.55) }),
     concrete: standard({ color: '#ffffff', ...concreteMaps, roughness: 0.92 }),
-    road: standard({ color: '#4a4e51', ...asphaltMaps, roughness: 0.95, metalness: 0.02, normalScale: new THREE.Vector2(0.22, 0.22) }),
+    road: standard({ color: '#514e48', ...asphaltMaps, roughness: 0.95, metalness: 0.02, normalScale: new THREE.Vector2(0.22, 0.22) }),
     paving: standard({ color: '#aaa38f', ...pavingMaps, roughness: 0.9, normalScale: new THREE.Vector2(0.85, 0.85) }),
     brick: standard({ color: '#a97256', ...brickMaps, roughness: 0.92, normalScale: new THREE.Vector2(0.9, 0.9) }),
     metal: standard({ color: '#ffffff', roughness: 0.48, metalness: 0.72 }),
     corrugated: standard({ color: '#ffffff', ...corrugatedMaps, roughness: 0.56, metalness: 0.6, normalScale: new THREE.Vector2(1.1, 1.1) }),
     dark: standard({ color: '#252d2e', roughness: 0.74 }),
-    glass: new THREE.MeshPhysicalMaterial({ color: '#3d545d', roughness: 0.09, metalness: 0.1, transmission: 0, reflectivity: 0.6, clearcoat: 0.9, clearcoatRoughness: 0.06 }),
+    glass: standard({ color: '#3d545d', roughness: 0.12, metalness: 0.55, envMapIntensity: 1.4 }),
     warmGlass: standard({ color: '#8b8577', emissive: '#ffc57b', emissiveIntensity: 0.04, roughness: 0.28, metalness: 0.05 }),
     foliage: standard({ color: '#ffffff', roughness: 0.96 }),
     cloth: standard({ color: '#ffffff', ...fabricMaps, roughness: 0.98, side: THREE.DoubleSide }),
@@ -255,10 +341,35 @@ export function createMaterials(profile: QualityProfile) {
     rust: standard({ color: '#8a5232', roughness: 0.86, metalness: 0.35 }),
     neon: standard({ color: '#2b2f33', emissive: '#ff8a4b', emissiveIntensity: 0.2, roughness: 0.5 }),
     water: new THREE.MeshPhysicalMaterial({ color: '#6d7f83', roughness: 0.06, metalness: 0.2, transparent: true, opacity: 0.6, clearcoat: 1 }),
+    leaf: standard({ map: leafMap, alphaTest: 0.42, side: THREE.DoubleSide, roughness: 0.94, metalness: 0, color: '#ffffff' }),
+    contact: contactShadowMaterial(),
+  };
+
+  /**
+   * A copy of a surface at a different texel density. Large flat areas - the
+   * road, the pavements, the open ground - need their texture repeated per
+   * metre, not stretched once across sixty of them, which is the difference
+   * between a surface and a sheet of coloured plastic.
+   */
+  const scaled = (source: THREE.MeshStandardMaterial, repeat: number) => {
+    const copy = source.clone();
+    for (const key of ['map', 'normalMap', 'roughnessMap'] as const) {
+      const texture = source[key];
+      if (!texture) continue;
+      const cloned = texture.clone();
+      cloned.needsUpdate = true;
+      cloned.wrapS = cloned.wrapT = THREE.RepeatWrapping;
+      cloned.repeat.set(repeat, repeat);
+      cloned.anisotropy = anisotropy;
+      made.push(cloned);
+      copy[key] = cloned;
+    }
+    return copy;
   };
 
   const all = Object.values(materials) as THREE.Material[];
   return Object.assign(materials, {
+    scaled,
     setQuality(next: QualityProfile) {
       for (const texture of made) texture.anisotropy = next.anisotropy;
       for (const texture of made) texture.needsUpdate = true;

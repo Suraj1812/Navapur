@@ -18,11 +18,12 @@ const GradeShader = {
   uniforms: {
     tDiffuse: { value: null as T.Texture | null },
     uTime: { value: 0 },
-    uVignette: { value: 0.72 },
-    uGrain: { value: 0.032 },
-    uWarmth: { value: 0.05 },
-    uSaturation: { value: 1.08 },
-    uLift: { value: new T.Vector3(0.008, 0.007, 0.012) },
+    uVignette: { value: 0.82 },
+    uGrain: { value: 0.013 },
+    uWarmth: { value: 0.042 },
+    uSaturation: { value: 1.14 },
+    uLift: { value: new T.Vector3(0.016, 0.016, 0.022) },
+    uHaunt: { value: 0 },
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -30,7 +31,7 @@ const GradeShader = {
   `,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse;
-    uniform float uTime, uVignette, uGrain, uWarmth, uSaturation;
+    uniform float uTime, uVignette, uGrain, uWarmth, uSaturation, uHaunt;
     uniform vec3 uLift;
     varying vec2 vUv;
     float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -44,8 +45,20 @@ const GradeShader = {
       color = mix(vec3(luma), color, uSaturation);
       vec2 centred = vUv - 0.5;
       float vignette = smoothstep(0.92, uVignette * 0.42, length(centred) * 1.32);
-      color *= mix(0.82, 1.0, vignette);
+      color *= mix(0.9, 1.0, vignette);
       color += (hash(vUv * 900.0 + uTime) - 0.5) * uGrain;
+      if (uHaunt > 0.001) {
+        // Colour drains out of the night and what is left leans cold.
+        float grey = dot(color, vec3(0.2126, 0.7152, 0.0722));
+        vec3 haunted = mix(vec3(grey), color, 0.45);
+        haunted *= vec3(0.82, 1.03, 1.06);
+        // A slow breath in the corners, and a little more grain.
+        float pulse = 0.5 + 0.5 * sin(uTime * 0.9);
+        float edge = smoothstep(1.05, 0.28, length(centred) * 1.5);
+        haunted *= mix(1.0, edge, 0.55 + pulse * 0.2);
+        haunted += (hash(vUv * 1700.0 - uTime * 3.0) - 0.5) * 0.05;
+        color = mix(color, haunted, uHaunt);
+      }
       gl_FragColor = vec4(max(color, 0.0), texel.a);
     }
   `,
@@ -109,6 +122,9 @@ export class PostFX {
   }
 
   setPixelRatio(ratio: number) { this.composer.setPixelRatio(ratio); }
+
+  /** 0 to 1: how far the picture drifts towards the city's other face. */
+  setHaunting(level: number) { this.grade.uniforms.uHaunt.value = level; }
 
   /** Night-time gets a touch more bloom so lamps and signs bleed convincingly. */
   setNight(amount: number) { if (this.bloom) { this.bloom.strength = 0.28 + amount * 0.45; this.bloom.threshold = 0.88 - amount * 0.24; } }
