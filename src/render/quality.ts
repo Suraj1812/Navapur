@@ -10,6 +10,8 @@ export interface QualityProfile {
   shadowMapSize: number;
   shadowDistance: number;
   softShadows: boolean;
+  /** Re-render the shadow map every Nth frame. Two frames of lag is invisible. */
+  shadowInterval: number;
   bloom: boolean;
   ambientOcclusion: boolean;
   antialias: 'none' | 'smaa' | 'msaa';
@@ -30,43 +32,49 @@ export interface QualityProfile {
 
 export const QUALITY_PROFILES: Record<QualityTier, QualityProfile> = {
   low: {
-    label: 'Performance', blurb: 'Smoothest on phones and older laptops.',
-    maxPixelRatio: 1, shadows: false, shadowMapSize: 1024, shadowDistance: 55, softShadows: false,
+    label: 'Performance', blurb: 'Smoothest on phones, older laptops and battery.',
+    maxPixelRatio: 0.85, shadows: false, shadowMapSize: 1024, shadowDistance: 45, softShadows: false, shadowInterval: 4,
     bloom: false, ambientOcclusion: false, antialias: 'none',
-    crowd: 34, crowdRadius: 62, vehicles: 22, vehicleLights: false, characterDetail: 0, rainDrops: 900, anisotropy: 2,
-    wetSurfaces: false, lampLights: 10, birds: 10, animals: 6, distantCity: false, environmentIntensity: 0.5,
+    crowd: 26, crowdRadius: 55, vehicles: 18, vehicleLights: false, characterDetail: 0, rainDrops: 700, anisotropy: 1,
+    wetSurfaces: false, lampLights: 6, birds: 8, animals: 5, distantCity: false, environmentIntensity: 0.5,
   },
   balanced: {
-    label: 'Balanced', blurb: 'A good picture with a long battery life.',
-    maxPixelRatio: 1.25, shadows: true, shadowMapSize: 2048, shadowDistance: 75, softShadows: false,
+    label: 'Balanced', blurb: 'The default. Soft light, full city, long battery life.',
+    maxPixelRatio: 1, shadows: true, shadowMapSize: 1536, shadowDistance: 58, softShadows: false, shadowInterval: 3,
     bloom: true, ambientOcclusion: false, antialias: 'smaa',
-    crowd: 58, crowdRadius: 85, vehicles: 32, vehicleLights: true, characterDetail: 1, rainDrops: 1800, anisotropy: 4,
-    wetSurfaces: true, lampLights: 22, birds: 16, animals: 12, distantCity: true, environmentIntensity: 0.55,
+    crowd: 42, crowdRadius: 72, vehicles: 26, vehicleLights: true, characterDetail: 1, rainDrops: 1400, anisotropy: 4,
+    wetSurfaces: true, lampLights: 14, birds: 12, animals: 9, distantCity: true, environmentIntensity: 0.55,
   },
   high: {
-    label: 'Cinematic', blurb: 'Soft shadows, bloom and a full street crowd.',
-    maxPixelRatio: 1.6, shadows: true, shadowMapSize: 3072, shadowDistance: 95, softShadows: true,
-    bloom: true, ambientOcclusion: true, antialias: 'smaa',
-    crowd: 88, crowdRadius: 110, vehicles: 44, vehicleLights: true, characterDetail: 2, rainDrops: 3200, anisotropy: 8,
-    wetSurfaces: true, lampLights: 36, birds: 24, animals: 18, distantCity: true, environmentIntensity: 0.6,
+    label: 'Cinematic', blurb: 'Soft shadows, bloom and a full street crowd. Wants a real GPU.',
+    maxPixelRatio: 1.25, shadows: true, shadowMapSize: 2560, shadowDistance: 80, softShadows: true, shadowInterval: 2,
+    bloom: true, ambientOcclusion: false, antialias: 'smaa',
+    crowd: 64, crowdRadius: 92, vehicles: 36, vehicleLights: true, characterDetail: 2, rainDrops: 2400, anisotropy: 8,
+    wetSurfaces: true, lampLights: 24, birds: 18, animals: 14, distantCity: true, environmentIntensity: 0.6,
   },
   ultra: {
-    label: 'Ultra', blurb: 'Everything on. For a desktop with a real GPU.',
-    maxPixelRatio: 2, shadows: true, shadowMapSize: 4096, shadowDistance: 125, softShadows: true,
+    label: 'Ultra', blurb: 'Ambient occlusion and everything else on. Desktop graphics cards only.',
+    maxPixelRatio: 1.6, shadows: true, shadowMapSize: 3072, shadowDistance: 105, softShadows: true, shadowInterval: 1,
     bloom: true, ambientOcclusion: true, antialias: 'smaa',
-    crowd: 120, crowdRadius: 135, vehicles: 56, vehicleLights: true, characterDetail: 2, rainDrops: 4800, anisotropy: 16,
-    wetSurfaces: true, lampLights: 48, birds: 34, animals: 26, distantCity: true, environmentIntensity: 0.62,
+    crowd: 92, crowdRadius: 118, vehicles: 48, vehicleLights: true, characterDetail: 2, rainDrops: 3600, anisotropy: 16,
+    wetSurfaces: true, lampLights: 34, birds: 26, animals: 20, distantCity: true, environmentIntensity: 0.62,
   },
 };
 
 export const QUALITY_ORDER: QualityTier[] = ['low', 'balanced', 'high', 'ultra'];
 
-/** Best guess at what this device can carry, before a single frame has been drawn. */
+/**
+ * A deliberately cautious guess at what this device can carry before a single
+ * frame has been drawn. Guessing low costs a little fidelity; guessing high
+ * costs the first impression, so integrated graphics and laptops start at
+ * Balanced and only a desktop graphics card is trusted with Ultra.
+ */
 export function detectQuality(): QualityTier {
   if (typeof navigator === 'undefined') return 'balanced';
   const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
   const cores = navigator.hardwareConcurrency || 4;
   const memory = (navigator as unknown as { deviceMemory?: number }).deviceMemory || 4;
+  const density = typeof devicePixelRatio === 'number' ? devicePixelRatio : 1;
   let renderer = '';
   try {
     const canvas = document.createElement('canvas');
@@ -74,12 +82,21 @@ export function detectQuality(): QualityTier {
     const info = gl?.getExtension('WEBGL_debug_renderer_info');
     if (gl && info) renderer = String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)).toLowerCase();
   } catch { /* renderer strings are optional */ }
+
   if (/swiftshader|llvmpipe|software|basic render/.test(renderer)) return 'low';
-  if (coarse) return /apple (a1[5-9]|a2|m[1-9])/.test(renderer) ? 'balanced' : 'low';
-  const weak = /(intel).*(hd|uhd) graphics (5|6)\d\d/.test(renderer) || cores <= 4 || memory <= 4;
-  if (weak) return 'balanced';
-  const strong = /rtx|radeon rx|apple m[2-9]|arc a[57]/.test(renderer) && cores >= 8 && memory >= 8;
-  return strong ? 'ultra' : 'high';
+  if (coarse) return 'low';
+  if (cores <= 4 || memory <= 4) return 'low';
+
+  // A discrete desktop card, and only then, gets the heavy tier.
+  const discrete = /(rtx|gtx 1[06-9]|radeon rx|arc a[57])/.test(renderer);
+  if (discrete && cores >= 8 && memory >= 8) return 'ultra';
+
+  // Apple silicon and modern integrated graphics are quick, but they are
+  // usually driving a very dense display, which is where the cost really is.
+  const capable = /apple m[1-9]|iris xe|radeon 7|uhd graphics 7|arc/.test(renderer);
+  if (capable && density <= 1.5 && cores >= 8) return 'high';
+  if (capable || cores >= 8) return 'balanced';
+  return 'balanced';
 }
 
 /**
@@ -89,9 +106,9 @@ export function detectQuality(): QualityTier {
 export class AdaptiveResolution {
   scale = 1;
   smoothedFps = 60;
-  private cooldown = 1.5;
+  private cooldown = 1.2;
   private readonly floor: number;
-  constructor(private target = 58, floor = 0.62) { this.floor = floor; }
+  constructor(private target = 55, floor = 0.55) { this.floor = floor; }
 
   reset() { this.scale = 1; this.smoothedFps = this.target; this.cooldown = 1.5; }
 
@@ -101,11 +118,11 @@ export class AdaptiveResolution {
     this.smoothedFps += (fps - this.smoothedFps) * (fps < this.smoothedFps ? 0.12 : 0.05);
     this.cooldown -= dt;
     if (this.cooldown > 0) return false;
-    if (this.smoothedFps < this.target - 10 && this.scale > this.floor) {
-      this.scale = Math.max(this.floor, this.scale - 0.1); this.cooldown = 1.4; return true;
+    if (this.smoothedFps < this.target - 8 && this.scale > this.floor) {
+      this.scale = Math.max(this.floor, this.scale - 0.12); this.cooldown = 0.9; return true;
     }
-    if (this.smoothedFps > this.target + 14 && this.scale < 1) {
-      this.scale = Math.min(1, this.scale + 0.05); this.cooldown = 3; return true;
+    if (this.smoothedFps > this.target + 16 && this.scale < 1) {
+      this.scale = Math.min(1, this.scale + 0.05); this.cooldown = 3.5; return true;
     }
     return false;
   }
@@ -115,4 +132,30 @@ export function applyProfile(renderer: T.WebGLRenderer, profile: QualityProfile,
   renderer.setPixelRatio(Math.min(devicePixelRatio, profile.maxPixelRatio) * scale);
   renderer.shadowMap.enabled = profile.shadows;
   renderer.shadowMap.type = profile.softShadows ? T.PCFSoftShadowMap : T.PCFShadowMap;
+  // The shadow map is redrawn on our schedule rather than on every frame.
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
+}
+
+/**
+ * If trimming resolution is not enough, the whole tier steps down. Two steps at
+ * most, several seconds apart, so a brief hitch never costs the picture.
+ */
+export class QualityWatchdog {
+  private slowFor = 0;
+  private grace = 6;
+  steps = 0;
+
+  /** Returns the tier to drop to, or null to stay put. */
+  update(dt: number, fps: number, tier: QualityTier, resolutionScale: number): QualityTier | null {
+    if (this.grace > 0) { this.grace -= dt; return null; }
+    if (this.steps >= 2) return null;
+    const struggling = fps < 34 && resolutionScale <= 0.72;
+    this.slowFor = struggling ? this.slowFor + dt : Math.max(0, this.slowFor - dt * 2);
+    if (this.slowFor < 4) return null;
+    const index = QUALITY_ORDER.indexOf(tier);
+    if (index <= 0) { this.steps = 2; return null; }
+    this.slowFor = 0; this.grace = 10; this.steps++;
+    return QUALITY_ORDER[index - 1];
+  }
 }

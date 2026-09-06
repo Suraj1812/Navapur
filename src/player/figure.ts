@@ -119,11 +119,11 @@ export class CrowdMeshes {
     const slot = (geometry: T.BufferGeometry, material: T.Material, cap = capacity) => new Slot(geometry, material, cap, this.group);
 
     this.skin = slot(geo.head(detail), skinMaterial);
-    this.features = slot(geo.features(detail), skinMaterial);
+    this.features = new Slot(geo.features(detail), skinMaterial, capacity, this.group, false);
     this.torsoM = slot(geo.torso(false, detail), clothMaterial);
     this.torsoF = slot(geo.torso(true, detail), clothMaterial);
     this.sash = slot(geo.sash(detail), clothMaterial, Math.ceil(capacity * 0.6));
-    for (const style of options.hairStyles) this.hair.set(style, slot(geo.hair(style, detail), hairMaterial, Math.ceil(capacity * 0.55)));
+    for (const style of options.hairStyles) this.hair.set(style, new Slot(geo.hair(style, detail), hairMaterial, Math.ceil(capacity * 0.55), this.group, false));
     for (const kind of options.accessories) if (kind !== 'none') this.prop.set(kind, slot(geo.prop(kind, detail), clothMaterial, Math.ceil(capacity * 0.35)));
     for (const style of ['skirt', 'dhoti'] as const) this.skirt.set(style, slot(geo.skirt(style, detail), clothMaterial, Math.ceil(capacity * 0.7)));
     this.armU = [slot(geo.upperArm('short', detail), clothMaterial), slot(geo.upperArm('short', detail), clothMaterial)];

@@ -13,7 +13,7 @@ import { Interactions, escapeHtml } from './interactions';
 import { distance } from './geometry';
 import { PostFX } from '../render/postfx';
 import {
-  AdaptiveResolution, QUALITY_PROFILES, applyProfile, detectQuality,
+  AdaptiveResolution, QUALITY_PROFILES, QualityWatchdog, applyProfile, detectQuality,
   type QualityProfile, type QualityTier,
 } from '../render/quality';
 import type { Place, Resident } from './types';
@@ -49,6 +49,7 @@ export class Game {
 
   private profile: QualityProfile;
   private adaptive = new AdaptiveResolution();
+  private watchdog = new QualityWatchdog();
   private last = 0;
   private fps = 60;
   private uiClock = 0;
@@ -61,14 +62,26 @@ export class Game {
   private nameLayer: HTMLDivElement;
   private notices = 0;
   private booted = false;
+  private shadowTick = 0;
+
+  /** Start-up timings, printed to the console with `?perf=1`. */
+  readonly bootTiming: Array<[string, number]> = [];
+  private stage<V>(label: string, build: () => V): V {
+    const started = performance.now();
+    const value = build();
+    this.bootTiming.push([label, Math.round(performance.now() - started)]);
+    return value;
+  }
 
   constructor() {
-    this.quality = this.readSavedQuality() ?? detectQuality();
-    this.autoQuality = this.readSavedQuality() === null;
+    const bootStarted = performance.now();
+    const requested = this.requestedQuality();
+    this.quality = requested ?? this.readSavedQuality() ?? detectQuality();
+    this.autoQuality = !requested && this.readSavedQuality() === null;
     this.profile = QUALITY_PROFILES[this.quality];
-    this.world = createWorld(this.profile);
-    this.traffic = new Traffic(this.profile);
-    this.sim = new Simulation(this.world.places, this.world.roadCoordinates);
+    this.world = this.stage('city', () => createWorld(this.profile));
+    this.traffic = this.stage('traffic', () => new Traffic(this.profile));
+    this.sim = this.stage('simulation', () => new Simulation(this.world.places, this.world.roadCoordinates));
 
     this.renderer = new T.WebGLRenderer({ antialias: this.profile.antialias === 'none', powerPreference: 'high-performance', stencil: false });
     this.renderer.setSize(innerWidth, innerHeight);
@@ -83,17 +96,19 @@ export class Game {
     document.getElementById('app')!.prepend(canvas);
 
     // A tiny indoor probe gives every material believable bounced light for free.
-    const room = new RoomEnvironment();
-    const pmrem = new T.PMREMGenerator(this.renderer);
-    const generated = pmrem.fromScene(room, 0.04);
-    this.scene.environment = generated.texture;
-    this.scene.environmentIntensity = this.profile.environmentIntensity;
-    room.dispose(); pmrem.dispose();
+    this.stage('environment probe', () => {
+      const room = new RoomEnvironment();
+      const pmrem = new T.PMREMGenerator(this.renderer);
+      const generated = pmrem.fromScene(room, 0.04);
+      this.scene.environment = generated.texture;
+      this.scene.environmentIntensity = this.profile.environmentIntensity;
+      room.dispose(); pmrem.dispose();
+    });
 
-    this.crowd = new Crowd(this.profile);
-    this.animals = new Animals(this.profile, this.world.roadCoordinates);
+    this.crowd = this.stage('crowd', () => new Crowd(this.profile));
+    this.animals = this.stage('animals', () => new Animals(this.profile, this.world.roadCoordinates));
     this.scene.add(this.world.group, this.traffic.group, this.crowd.group, this.animals.group);
-    this.environment = new Environment(this.scene, this.profile);
+    this.environment = this.stage('sky and weather', () => new Environment(this.scene, this.profile));
     this.player = new PlayerController(this.camera, canvas, this.world.colliders, this.world.bounds);
     this.scene.add(this.player.avatar.group);
     this.player.reset(this.sim.player);
@@ -101,7 +116,7 @@ export class Game {
     this.postfx.setSize(innerWidth, innerHeight);
     this.postfx.setPixelRatio(this.renderer.getPixelRatio());
 
-    this.ui = new GameUI({
+    this.ui = this.stage('interface', () => new GameUI({
       onAction: (a, v) => {
         if (a === 'rest') {
           this.sim.player.stamina = 100;
@@ -112,7 +127,7 @@ export class Game {
         } else this.interactions.act(a, v);
       },
       hasSave: this.hasSave(),
-    });
+    }));
     this.ui.setMap(this.world.places, this.world.roadCoordinates, this.world.bounds);
     this.interactions = new Interactions(this);
 
@@ -162,6 +177,12 @@ export class Game {
       this.ui.toast('The graphics context paused. Reload to continue from your last save.');
     });
     addEventListener('beforeunload', () => { if (this.started) this.save(false); });
+    this.bootTiming.push(['total', Math.round(performance.now() - bootStarted)]);
+    try {
+      if (new URLSearchParams(location.search).has('perf')) {
+        console.info('[navapur] start-up', Object.fromEntries(this.bootTiming));
+      }
+    } catch { /* query strings are optional */ }
     (window as unknown as { __navapur: Game }).__navapur = this;
     requestAnimationFrame(t => this.frame(t));
   }
@@ -171,6 +192,14 @@ export class Game {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(innerWidth, innerHeight);
     this.postfx.setSize(innerWidth, innerHeight);
+  }
+
+  /** `?quality=low` is a one-URL escape hatch when a machine is struggling. */
+  private requestedQuality(): QualityTier | null {
+    try {
+      const value = new URLSearchParams(location.search).get('quality');
+      return value && value in QUALITY_PROFILES ? value as QualityTier : null;
+    } catch { return null; }
   }
 
   private readSavedQuality(): QualityTier | null {
@@ -454,6 +483,19 @@ export class Game {
       applyProfile(this.renderer, this.profile, this.adaptive.scale);
       this.postfx.setPixelRatio(this.renderer.getPixelRatio());
     }
+    // If that is not enough, step the whole tier down rather than stutter.
+    const drop = this.watchdog.update(dt, this.adaptive.smoothedFps, this.quality, this.adaptive.scale);
+    if (drop) {
+      const wasAuto = this.autoQuality;
+      this.setQuality(drop);
+      this.autoQuality = wasAuto;
+      if (wasAuto) { try { localStorage.removeItem(QUALITY_KEY); } catch { /* storage may be blocked */ } }
+      this.ui.toast(`Graphics eased to ${QUALITY_PROFILES[drop].label} to keep the city smooth. Change it any time in settings.`);
+    }
+
+    // Redrawing the shadow map every frame is the single most expensive thing
+    // the city does; two frames of lag on a moving shadow is invisible.
+    this.renderer.shadowMap.needsUpdate = this.profile.shadows && this.shadowTick++ % this.profile.shadowInterval === 0;
 
     this.postfx.render(dt, this.elapsed);
 

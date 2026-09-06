@@ -41,14 +41,14 @@ interface SurfaceMaps { color: HTMLCanvasElement; height: HTMLCanvasElement; }
  * height pass, from which the normal and roughness maps are derived. No image
  * downloads, no loading spinner, and the whole city ships in the JS bundle.
  */
-function paint(kind: Surface, size = 512): SurfaceMaps {
+function paint(kind: Surface, size = 256): SurfaceMaps {
   const albedo = canvas2d(size);
   const bump = canvas2d(size);
   const random = seededRandom(1201 + kind.length * 37);
   const a = albedo.ctx; const h = bump.ctx;
 
   const base: Record<Surface, string> = {
-    plaster: '#e8e2d4', asphalt: '#3b3f42', paving: '#c3bba7', brick: '#a86a4d', concrete: '#cfcabb',
+    plaster: '#ded7c6', asphalt: '#3b3f42', paving: '#b6ae9a', brick: '#a86a4d', concrete: '#cfcabb',
     corrugated: '#9aa3a1', wood: '#8a6440', tile: '#a5573c', marble: '#f0ece1', dirt: '#b9a184', fabric: '#e6e1d5',
   };
   a.fillStyle = base[kind]; a.fillRect(0, 0, size, size);
@@ -210,7 +210,7 @@ export function createMaterials(profile: QualityProfile) {
   const anisotropy = profile.anisotropy;
   const made: THREE.Texture[] = [];
 
-  const build = (kind: Surface, repeat: number, normalStrength: number, size = 512) => {
+  const build = (kind: Surface, repeat: number, normalStrength: number, size = 256) => {
     const maps = paint(kind, size);
     const map = textureFrom(maps.color, repeat, true, anisotropy);
     const normalMap = textureFrom(normalFromHeight(maps.height, normalStrength), repeat, false, anisotropy);
@@ -219,17 +219,17 @@ export function createMaterials(profile: QualityProfile) {
     return { map, normalMap, roughnessMap };
   };
 
-  const plasterMaps = build('plaster', 2, 1.6);
-  const asphaltMaps = build('asphalt', 46, 0.9);
-  const pavingMaps = build('paving', 9, 3);
-  const brickMaps = build('brick', 3, 3.4);
-  const concreteMaps = build('concrete', 2.4, 1.2);
-  const corrugatedMaps = build('corrugated', 3, 3.2, 256);
-  const woodMaps = build('wood', 2, 1.6, 256);
-  const tileMaps = build('tile', 4, 3, 256);
-  const marbleMaps = build('marble', 2, 0.8, 256);
-  const dirtMaps = build('dirt', 12, 2, 256);
-  const fabricMaps = build('fabric', 3, 1, 256);
+  const plasterMaps = build('plaster', 2, 1.6, 384);
+  const asphaltMaps = build('asphalt', 46, 0.9, 384);
+  const pavingMaps = build('paving', 9, 3, 256);
+  const brickMaps = build('brick', 3, 3.4, 256);
+  const concreteMaps = build('concrete', 2.4, 1.2, 256);
+  const corrugatedMaps = build('corrugated', 3, 3.2, 192);
+  const woodMaps = build('wood', 2, 1.6, 192);
+  const tileMaps = build('tile', 4, 3, 192);
+  const marbleMaps = build('marble', 2, 0.8, 192);
+  const dirtMaps = build('dirt', 12, 2, 192);
+  const fabricMaps = build('fabric', 3, 1, 128);
 
   const standard = (parameters: THREE.MeshStandardMaterialParameters) => new THREE.MeshStandardMaterial(parameters);
 
@@ -237,7 +237,7 @@ export function createMaterials(profile: QualityProfile) {
     plaster: standard({ color: '#ffffff', ...plasterMaps, roughness: 0.95, normalScale: new THREE.Vector2(0.55, 0.55) }),
     concrete: standard({ color: '#ffffff', ...concreteMaps, roughness: 0.92 }),
     road: standard({ color: '#4a4e51', ...asphaltMaps, roughness: 0.95, metalness: 0.02, normalScale: new THREE.Vector2(0.22, 0.22) }),
-    paving: standard({ color: '#b9b09c', ...pavingMaps, roughness: 0.9, normalScale: new THREE.Vector2(0.85, 0.85) }),
+    paving: standard({ color: '#aaa38f', ...pavingMaps, roughness: 0.9, normalScale: new THREE.Vector2(0.85, 0.85) }),
     brick: standard({ color: '#a97256', ...brickMaps, roughness: 0.92, normalScale: new THREE.Vector2(0.9, 0.9) }),
     metal: standard({ color: '#ffffff', roughness: 0.48, metalness: 0.72 }),
     corrugated: standard({ color: '#ffffff', ...corrugatedMaps, roughness: 0.56, metalness: 0.6, normalScale: new THREE.Vector2(1.1, 1.1) }),

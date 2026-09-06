@@ -75,14 +75,15 @@ export function createWorld(profile: QualityProfile): World {
       speedBreaker(batch, materials, segment + 24, road, true);
     }
     for (let segment = 0; segment < 4; segment++) {
-      if (Math.abs(road) !== 72 && road !== 0) continue;
+      // Only the arterial roads are divided; the old bazaar street stays open.
+      if (Math.abs(road) !== 72) continue;
       median(batch, materials, road, ROADS[segment] + 16, road, ROADS[segment] + 56, random);
       median(batch, materials, ROADS[segment] + 16, road, ROADS[segment] + 56, road, random);
     }
   }
 
   /* -------------------------------------------------- blocks */
-  const earthPalette = ['#bbae95', '#c7bea6', '#af9880', '#c4af91', '#9eaaa0', '#b9b4a1', '#c4baaa', '#a8afa4', '#baa28d', '#c9b295'];
+  const earthPalette = ['#a89a7e', '#bdb298', '#9a836a', '#b5a07f', '#8b9a92', '#aca592', '#b6ab99', '#98a094', '#a98f78', '#c0a684'];
   const treeKinds: TreeKind[] = ['neem', 'gulmohar', 'ashoka', 'banyan', 'palm'];
   let buildingIndex = 0;
   const addBuilding = (spec: Omit<BuildingSpec, 'index'>) => building(batch, materials, signs, colliders, places, { ...spec, index: buildingIndex++ }, random);
