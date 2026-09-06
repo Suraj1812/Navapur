@@ -1,11 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 512" role="img" aria-labelledby="title">
-  <title id="title">Navapur</title>
-  <defs><linearGradient id="gold" x1="92" y1="110" x2="420" y2="425" gradientUnits="userSpaceOnUse"><stop stop-color="#fff0c3"/><stop offset=".45" stop-color="#e9b875"/><stop offset="1" stop-color="#c8824f"/></linearGradient></defs>
-  <rect width="512" height="512" rx="112" fill="#13201e"/>
-  <path d="M94 344 184 194l82 70 83-150" fill="none" stroke="#91d2c5" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M94 344h324" fill="none" stroke="#91d2c5" stroke-width="18" stroke-linecap="round"/>
-  <path d="M80 382V266l64-47v163h51V174l64-55v263h51V231l64 48v103h34v43H54v-43z" fill="url(#gold)"/>
-  <g fill="#13201e"><circle cx="144" cy="219" r="19"/><circle cx="195" cy="174" r="19"/><circle cx="259" cy="119" r="19"/><circle cx="310" cy="231" r="19"/></g>
-  <text x="580" y="261" fill="#13201e" font-family="Arial, Helvetica, sans-serif" font-size="145" font-weight="800" letter-spacing="18">NAVAPUR</text>
-  <text x="586" y="332" fill="#49665e" font-family="Arial, Helvetica, sans-serif" font-size="33" font-weight="700" letter-spacing="9">A CITY, A THOUSAND STORIES</text>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     viewBox="0 0 1720 512" width="1720" height="512" role="img" aria-labelledby="navapur-logo-title navapur-logo-desc">
+  <title id="navapur-logo-title">Navapur — a city, a thousand stories</title>
+  <desc id="navapur-logo-desc">Horizontal Navapur logo lockup: the gold arch and skyline mark beside the NAVAPUR wordmark, the Devanagari नवापुर, and the tagline “a city, a thousand stories”.</desc>
+  <metadata>
+    <rdf:RDF>
+      <rdf:Description rdf:about="urn:navapur:brand:logo-horizontal">
+        <dc:title>Navapur horizontal lockup</dc:title>
+        <dc:subject>logo, lockup, wordmark, bilingual, Devanagari, Navapur, city, brand</dc:subject>
+        <dc:description>Primary horizontal lockup for headers, README banners and press. Minimum width 240 px; clear space equals the height of the N.</dc:description>
+        <dc:format>image/svg+xml</dc:format>
+        <dc:language>en-IN</dc:language>
+      </rdf:Description>
+    </rdf:RDF>
+  </metadata>
+  <defs>
+    <linearGradient id="lgField" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1B2E2A"/><stop offset="1" stop-color="#0E1917"/>
+    </linearGradient>
+    <linearGradient id="lgGold" x1="120" y1="90" x2="400" y2="430" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFEDC6"/><stop offset=".45" stop-color="#E9B875"/><stop offset="1" stop-color="#BE7C48"/>
+    </linearGradient>
+    <clipPath id="lgArchClip"><path d="M134 404V254c0-58 38-104 86-116l36-34 36 34c48 12 86 58 86 116v150Z"/></clipPath>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#lgField)"/>
+  <g clip-path="url(#lgArchClip)">
+    <circle cx="256" cy="216" r="52" fill="#8FCFC1"/>
+    <g fill="url(#lgGold)">
+      <rect x="140" y="312" width="48" height="96" rx="6"/>
+      <rect x="196" y="256" width="56" height="152" rx="6"/>
+      <rect x="260" y="290" width="42" height="118" rx="6"/>
+      <rect x="310" y="272" width="58" height="136" rx="6"/>
+    </g>
+  </g>
+  <path d="M134 404V254c0-58 38-104 86-116l36-34 36 34c48 12 86 58 86 116v150"
+        fill="none" stroke="url(#lgGold)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M256 62 274 92h-36Z" fill="url(#lgGold)"/>
+  <rect x="96" y="404" width="320" height="30" rx="15" fill="url(#lgGold)"/>
+
+  <text x="596" y="256" fill="#13201E" font-family="'Trebuchet MS', 'Segoe UI', Arial, Helvetica, sans-serif" font-size="132" font-weight="700" letter-spacing="20">NAVAPUR</text>
+  <text x="1478" y="256" fill="#6C8B82" font-family="'Nirmala UI', 'Noto Sans Devanagari', system-ui, sans-serif" font-size="86" font-weight="600" text-anchor="end">नवापुर</text>
+  <rect x="600" y="292" width="1040" height="3" rx="1.5" fill="#C9A97E"/>
+  <text x="600" y="360" fill="#49665E" font-family="'Trebuchet MS', 'Segoe UI', Arial, Helvetica, sans-serif" font-size="38" font-weight="600" letter-spacing="11">A CITY, A THOUSAND STORIES</text>
 </svg>
