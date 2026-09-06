@@ -17,6 +17,10 @@ export class PlayerController {
   inVehicle = false;
   firstPerson = false;
   speed = 0;
+  /** Ease the camera round to whatever you are pointed at. */
+  autoFollow = true;
+  /** Set by the game while driving; on foot it is taken from the direction of travel. */
+  followYaw: number | null = null;
 
   private verticalSpeed = 0;
   private height = 0;
@@ -26,6 +30,7 @@ export class PlayerController {
   private lastZ = 0;
   private lastYaw = Math.PI;
   private headBob = 0;
+  private lookIdle = 99;
   private desired = new T.Vector3();
   private target = new T.Vector3();
 
@@ -41,6 +46,7 @@ export class PlayerController {
     canvas.addEventListener('pointerup', () => { this.dragging = false; });
     canvas.addEventListener('pointermove', e => {
       if (!this.dragging && document.pointerLockElement !== canvas) return;
+      if (e.movementX || e.movementY) this.lookIdle = 0;
       this.yaw -= e.movementX * 0.004;
       this.pitch = clamp(this.pitch + e.movementY * 0.003, -0.25, 1.03);
     });
@@ -85,12 +91,29 @@ export class PlayerController {
     this.height = Math.max(0, this.height + this.verticalSpeed * dt);
     if (this.height === 0) this.verticalSpeed = 0;
 
+    const previousX = this.lastX; const previousZ = this.lastZ;
     const travelled = Math.hypot(p.x - this.lastX, p.z - this.lastZ);
     this.lastX = p.x; this.lastZ = p.z;
     const instant = Math.min(travelled / Math.max(dt, 0.001), 10);
     this.speed += (instant - this.speed) * Math.min(1, dt * 14);
     const turnRate = clamp((this.yaw - this.lastYaw) / Math.max(dt, 0.001), -3, 3);
     this.lastYaw = this.yaw;
+
+    // Chase camera: swing round behind whatever direction you are actually
+    // heading, so a turn never leaves you driving sideways across the screen.
+    // Touching the mouse hands control back for a moment, then it settles again.
+    this.lookIdle += dt;
+    const grabbed = this.dragging;
+    let follow = this.followYaw;
+    if (follow === null && !this.inVehicle && this.moving && travelled > 0.0005) {
+      follow = Math.atan2(p.x - previousX, p.z - previousZ);
+    }
+    if (this.autoFollow && follow !== null && !grabbed && this.lookIdle > (this.inVehicle ? 0.6 : 1.1)) {
+      const settle = Math.min(1, (this.lookIdle - (this.inVehicle ? 0.6 : 1.1)) * 1.6);
+      const rate = (this.inVehicle ? 3.6 : 1.9) * settle * Math.min(1, this.speed / (this.inVehicle ? 3 : 1.6));
+      const diff = Math.atan2(Math.sin(follow - this.yaw), Math.cos(follow - this.yaw));
+      this.yaw += clamp(diff, -dt * rate, dt * rate);
+    }
 
     this.avatar.group.position.set(p.x, this.height + (this.inVehicle ? 0.42 : 0), p.z);
     if (this.inVehicle) this.avatar.group.rotation.y = this.yaw;

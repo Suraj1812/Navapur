@@ -334,7 +334,7 @@ export class Game {
         vehicles: this.traffic.serialize(),
         controlled: this.traffic.controlled?.id ?? null,
         progress: this.progress,
-        settings: { quality: this.quality, timeScale: this.timeScale, audio: this.audio.enabled },
+        settings: { quality: this.quality, timeScale: this.timeScale, audio: this.audio.enabled, follow: this.player.autoFollow },
         waypoint: this.waypoint,
       }));
       if (notify) this.ui.toast('Journey saved on this device.');
@@ -371,6 +371,7 @@ export class Game {
       this.setQuality(savedQuality in QUALITY_PROFILES ? savedQuality as QualityTier : savedQuality === 'balanced' ? 'balanced' : this.quality);
       this.timeScale = [0.5, 1, 10].includes(data.settings?.timeScale) ? data.settings.timeScale : 1;
       this.audio.setEnabled(data.settings?.audio !== false);
+      this.player.autoFollow = data.settings?.follow !== false;
       this.player.inVehicle = false;
       if (data.controlled) {
         this.traffic.controlled = this.traffic.vehicles.find(v => v.id === data.controlled)!;
@@ -406,6 +407,9 @@ export class Game {
         });
     }
 
+    // While driving, the camera trails the vehicle's own heading rather than the
+    // direction it happens to be sliding in.
+    this.player.followYaw = this.traffic.controlled ? this.traffic.controlled.heading : null;
     if (this.started) this.player.update(dt, this.sim.player, this.elapsed, !paused);
     else {
       this.camera.position.set(-5.5, 4.8, 43);
