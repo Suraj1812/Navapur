@@ -1,0 +1,149 @@
+{
+  "$schema": "https://navapur.dev/schema/brand.json",
+  "name": "Navapur",
+  "nameLocalised": { "hi-IN": "नवापुर" },
+  "tagline": "A city, a thousand stories",
+  "version": "1.0.0",
+  "description": "Navapur is an interactive 3D Indian city that runs in the browser. The identity is built on a torana archway framing a skyline and a rising sun: a doorway into a place that is already living its own life.",
+  "keywords": ["Navapur", "brand", "logo", "identity", "torana", "archway", "skyline", "India", "city", "3D", "browser game", "Three.js"],
+  "language": "en-IN",
+  "license": "MIT",
+  "palette": {
+    "ink": { "hex": "#13201E", "role": "Primary surface and logo field", "contrastOn": "#F2E6CD" },
+    "inkDeep": { "hex": "#0D1614", "role": "Page background and boot screen" },
+    "gold": { "hex": "#E9B875", "role": "Primary brand colour: the arch, skyline and wordmark rules" },
+    "goldLight": { "hex": "#FFEDC6", "role": "Gradient highlight on the mark" },
+    "goldDeep": { "hex": "#BE7C48", "role": "Gradient shadow on the mark" },
+    "mint": { "hex": "#8FCFC1", "role": "Secondary accent: the sun, live indicators, links" },
+    "sage": { "hex": "#49665E", "role": "Muted supporting text on light fields" },
+    "mist": { "hex": "#F2E6CD", "role": "Primary text on dark fields" }
+  },
+  "typography": {
+    "wordmark": { "family": "Trebuchet MS, Segoe UI, Arial, sans-serif", "weight": 700, "tracking": "0.15em", "case": "uppercase" },
+    "devanagari": { "family": "Nirmala UI, Noto Sans Devanagari, system-ui, sans-serif", "weight": 600 },
+    "interface": { "family": "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }
+  },
+  "clearSpace": "Keep clear space equal to the height of the wordmark's N on every side of any lockup; for the mark alone, keep 96 units of the 512 grid.",
+  "minimumSize": { "mark": "24 px", "horizontalLockup": "240 px", "stackedLockup": "160 px" },
+  "assets": [
+    {
+      "id": "logo-mark",
+      "file": "/logo-mark.svg",
+      "title": "Navapur logo mark",
+      "description": "The primary mark: a gold torana arch with a finial, framing four skyline blocks and a mint rising sun, on a deep green rounded field.",
+      "category": "logo",
+      "keywords": ["mark", "logo", "app icon", "arch", "torana", "skyline", "sun"],
+      "accessibleLabel": "Navapur",
+      "usage": "Headers, the in-game brand block, app listings and anywhere the name appears nearby. Never recolour or rotate.",
+      "aspectRatio": "1:1",
+      "formats": ["image/svg+xml"]
+    },
+    {
+      "id": "logo-horizontal",
+      "file": "/logo.svg",
+      "title": "Navapur horizontal lockup",
+      "description": "The mark beside the NAVAPUR wordmark, the Devanagari नवापुर and the tagline, on a transparent field.",
+      "category": "logo",
+      "keywords": ["lockup", "horizontal", "wordmark", "bilingual", "header", "banner"],
+      "accessibleLabel": "Navapur — a city, a thousand stories",
+      "usage": "Site headers, README banners, press kits and slide title cards. Preferred lockup wherever width allows.",
+      "aspectRatio": "1720:512",
+      "formats": ["image/svg+xml"]
+    },
+    {
+      "id": "logo-stacked",
+      "file": "/brand/logo-stacked.svg",
+      "title": "Navapur stacked lockup",
+      "description": "The mark above the wordmark, Devanagari and tagline, centred.",
+      "category": "logo",
+      "keywords": ["lockup", "vertical", "stacked", "splash", "poster", "square"],
+      "accessibleLabel": "Navapur — a city, a thousand stories",
+      "usage": "Splash screens, posters, square social posts and merchandise.",
+      "aspectRatio": "4:5",
+      "formats": ["image/svg+xml"]
+    },
+    {
+      "id": "logo-mono",
+      "file": "/brand/logo-mono.svg",
+      "title": "Navapur single-colour mark",
+      "description": "The mark reduced to one colour, inheriting currentColor.",
+      "category": "logo",
+      "keywords": ["mono", "monochrome", "single colour", "watermark", "print", "mask icon", "embroidery"],
+      "accessibleLabel": "Navapur",
+      "usage": "Watermarks, one-colour print, embroidery, Safari mask icons and any surface that cannot carry the full palette.",
+      "aspectRatio": "1:1",
+      "formats": ["image/svg+xml"]
+    },
+    {
+      "id": "mark-solid",
+      "file": "/brand/mark-solid.svg",
+      "title": "Navapur mark — flat",
+      "description": "The mark drawn without gradients or clip paths, for rasterisers and manufacturing workflows that do not support them.",
+      "category": "logo",
+      "keywords": ["flat", "raster", "export", "print", "compatibility"],
+      "accessibleLabel": "Navapur",
+      "usage": "Source for PNG exports, screen printing and any renderer with limited SVG support.",
+      "aspectRatio": "1:1",
+      "formats": ["image/svg+xml"]
+    },
+    {
+      "id": "wordmark",
+      "file": "/brand/wordmark.svg",
+      "title": "Navapur wordmark",
+      "description": "The NAVAPUR wordmark with its rule and tagline, without the arch mark.",
+      "category": "logo",
+      "keywords": ["wordmark", "type", "text", "logotype"],
+      "accessibleLabel": "Navapur",
+      "usage": "Where the arch mark already appears close by, or in tight horizontal bands.",
+      "aspectRatio": "1120:260",
+      "formats": ["image/svg+xml"]
+    },
+    {
+      "id": "favicon",
+      "file": "/favicon.svg",
+      "title": "Navapur favicon",
+      "description": "A thickened, simplified arch and three skyline blocks that survive rendering at 16 px.",
+      "category": "icon",
+      "keywords": ["favicon", "tab", "browser", "16px", "small"],
+      "accessibleLabel": "Navapur",
+      "usage": "Browser tabs and bookmarks. Do not use above 64 px; use the full mark instead.",
+      "aspectRatio": "1:1",
+      "formats": ["image/svg+xml", "image/png"]
+    },
+    {
+      "id": "app-icon",
+      "file": "/icon.svg",
+      "title": "Navapur app icon",
+      "description": "The maskable installed-app icon: the mark inset to 72 percent inside a full-bleed field so any platform mask can crop it safely.",
+      "category": "icon",
+      "keywords": ["app icon", "pwa", "maskable", "install", "home screen", "android", "ios"],
+      "accessibleLabel": "Navapur app icon",
+      "usage": "Web app manifest, home-screen install and store listings. Exported to icon-192.png, icon-512.png and apple-touch-icon.png.",
+      "aspectRatio": "1:1",
+      "formats": ["image/svg+xml", "image/png"]
+    },
+    {
+      "id": "social-preview",
+      "file": "/social-preview.png",
+      "title": "Navapur social card",
+      "description": "A 1200 by 630 dusk skyline with the mark, wordmark and a three-line promise, for link previews.",
+      "category": "social",
+      "keywords": ["og image", "open graph", "twitter card", "social", "preview", "share"],
+      "accessibleLabel": "Navapur, an interactive 3D Indian city experience",
+      "usage": "og:image and twitter:image. Regenerate whenever the tagline or mark changes.",
+      "aspectRatio": "1200:630",
+      "formats": ["image/png"]
+    },
+    {
+      "id": "icon-system",
+      "file": "/brand/icons.json",
+      "title": "Navapur interface icon system",
+      "description": "Fifty-eight interface icons on a 24 unit grid with a 1.5 stroke, drawn in currentColor, each with an accessible label, description, keywords, category and usage note.",
+      "category": "icon-set",
+      "keywords": ["icons", "ui", "interface", "system", "svg", "sprite", "accessible"],
+      "accessibleLabel": "Navapur icon system",
+      "usage": "Import from src/ui/icons.ts inside the app; use /brand/icons-sprite.svg or /brand/icons.json elsewhere. Browse them at /brand/icons.html.",
+      "formats": ["application/json", "image/svg+xml", "text/html"]
+    }
+  ]
+}
