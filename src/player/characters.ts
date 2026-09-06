@@ -1,20 +1,147 @@
 import * as T from 'three';
-import type {Resident,Weather} from '../core/types';
-const dummy=new T.Object3D();
+import type { Resident, Weather } from '../core/types';
+import { QUALITY_PROFILES, type QualityProfile } from '../render/quality';
+import {
+  ACCESSORIES, HAIR_STYLES, createPose, outfitFor, solvePose,
+  type Action, type Outfit,
+} from './anatomy';
+import {
+  CrowdMeshes, HumanFigure, createSkeleton, solveSkeleton, writePerson,
+  type RootTransform,
+} from './figure';
+
+interface CrowdEntry { outfit: Outfit; phase: number; x: number; z: number; speed: number; heading: number; seed: number; }
+
+/**
+ * Every person you can see on the street. Residents nearest the player are
+ * drawn with the full rig; the rest of the simulation keeps running invisibly
+ * and fades in as you walk towards it.
+ */
 export class Crowd {
- readonly group=new T.Group(); readonly max=72; private pieces:T.InstancedMesh[]=[];activeCount=0;
- constructor(){
- const shapes=[new T.CapsuleGeometry(.23,.43,3,8),new T.SphereGeometry(.17,10,8),new T.SphereGeometry(.178,10,8),new T.CapsuleGeometry(.073,.41,3,6),new T.CapsuleGeometry(.073,.41,3,6),new T.CapsuleGeometry(.08,.48,3,6),new T.CapsuleGeometry(.08,.48,3,6),new T.BoxGeometry(.15,.09,.25),new T.BoxGeometry(.15,.09,.25),new T.SphereGeometry(.8,12,6,0,Math.PI*2,0,Math.PI/2)];
- shapes.forEach((g,i)=>{const m=new T.InstancedMesh(g,new T.MeshStandardMaterial({roughness:.87,side:i===9?T.DoubleSide:T.FrontSide}),this.max);m.instanceMatrix.setUsage(T.DynamicDrawUsage);m.castShadow=true;m.frustumCulled=false;this.pieces.push(m);this.group.add(m);});
- }
- update(residents:Resident[],player:{x:number,z:number},elapsed:number,weather:Weather){
- const selected=residents.filter(r=>Math.hypot(r.x-player.x,r.z-player.z)<105&&r.activity!=='Sleeping').sort((a,b)=>Math.hypot(a.x-player.x,a.z-player.z)-Math.hypot(b.x-player.x,b.z-player.z)).slice(0,this.max);this.activeCount=selected.length;
- for(let j=0;j<selected.length;j++){const r=selected[j],walk=r.moving?Math.sin(elapsed*7+j)*.45:0;const skin=new T.Color(['#9e6b4b','#ae7954','#865735','#c38c67'][j%4]);const shirt=new T.Color(r.color);const pant=new T.Color(j%3===0?'#c6b999':'#34454c');
- const spec=[[0,1.14,0,0],[0,1.68,0,0],[0,1.75,-.028,0],[-.31,1.1,0,walk],[.31,1.1,0,-walk],[-.125,.48,0,-walk],[.125,.48,0,walk],[-.125,.105,Math.sin(-walk)*.38+.06,0],[.125,.105,Math.sin(walk)*.38+.06,0],[.12,2.02,0,0]];
- for(let i=0;i<this.pieces.length;i++){const [x,y,z,rx]=spec[i];const scale=r.age==='Child'?.73:1;dummy.position.set(r.x+(x*Math.cos(r.heading)+z*Math.sin(r.heading))*scale,y*scale,r.z+(-x*Math.sin(r.heading)+z*Math.cos(r.heading))*scale);dummy.rotation.set(0,r.heading,0);dummy.rotateX(rx);dummy.scale.setScalar(scale);if(i===2)dummy.scale.y*=.6;if(i===9&&weather!=='rain')dummy.scale.setScalar(0);dummy.updateMatrix();this.pieces[i].setMatrixAt(j,dummy.matrix);this.pieces[i].setColorAt(j,i===1?skin:i===2||i===7||i===8?new T.Color('#252525'):i===5||i===6?pant:shirt);}
- }
- this.pieces.forEach(m=>{m.count=selected.length;m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;});
- }
+  readonly group = new T.Group();
+  activeCount = 0;
+  private meshes: CrowdMeshes;
+  private entries = new Map<string, CrowdEntry>();
+  private pose = createPose();
+  private skeleton = createSkeleton();
+  private root: RootTransform = { x: 0, y: 0, z: 0, heading: 0, scale: 1, headScale: 1 };
+  private profile: QualityProfile;
+
+  constructor(profile: QualityProfile = QUALITY_PROFILES.high) {
+    this.profile = profile;
+    this.meshes = this.createMeshes(profile);
+  }
+
+  private createMeshes(profile: QualityProfile) {
+    const meshes = new CrowdMeshes({
+      capacity: profile.crowd,
+      detail: profile.characterDetail,
+      hairStyles: HAIR_STYLES,
+      accessories: ACCESSORIES,
+    });
+    this.group.add(meshes.group);
+    return meshes;
+  }
+
+  setQuality(profile: QualityProfile) {
+    if (profile.crowd === this.profile.crowd && profile.characterDetail === this.profile.characterDetail) { this.profile = profile; return; }
+    this.group.remove(this.meshes.group);
+    this.meshes.dispose();
+    this.profile = profile;
+    this.meshes = this.createMeshes(profile);
+  }
+
+  private entryFor(resident: Resident): CrowdEntry {
+    let entry = this.entries.get(resident.id);
+    if (!entry) {
+      let seed = 0;
+      for (let i = 0; i < resident.id.length; i++) seed = (seed * 31 + resident.id.charCodeAt(i)) % 100000;
+      const age = resident.age === 'Child' ? 'Child' : resident.age === 'Elder' || resident.age === 'Senior' ? 'Elder' : 'Adult';
+      entry = { outfit: outfitFor(seed + 1, age, undefined), phase: (seed % 100) / 15.9, x: resident.x, z: resident.z, speed: 0, heading: resident.heading, seed };
+      // The simulation's own accent colour keeps a resident recognisable in dialogue.
+      entry.outfit.shirt = resident.color;
+      this.entries.set(resident.id, entry);
+    }
+    return entry;
+  }
+
+  private actionFor(resident: Resident): Action {
+    const activity = resident.activity.toLowerCase();
+    if (activity.includes('sitting') || activity.includes('resting') || activity.includes('eating') || activity.includes('waiting')) return 'sit';
+    if (activity.includes('talking') || activity.includes('chatting') || activity.includes('meeting')) return 'talk';
+    if (activity.includes('carrying') || activity.includes('delivering') || activity.includes('shopping')) return 'carry';
+    return resident.moving ? 'walk' : 'idle';
+  }
+
+  update(residents: Resident[], player: { x: number; z: number }, elapsed: number, dtOrWeather: number | Weather, nextWeather?: Weather) {
+    const dt = typeof dtOrWeather === 'number' ? dtOrWeather : 1 / 60;
+    const weather = typeof dtOrWeather === 'string' ? dtOrWeather : nextWeather ?? 'clear';
+    const radius = this.profile.crowdRadius;
+    const selected: Resident[] = [];
+    for (const resident of residents) {
+      if (resident.activity === 'Sleeping') continue;
+      const dx = resident.x - player.x, dz = resident.z - player.z;
+      if (dx * dx + dz * dz > radius * radius) continue;
+      selected.push(resident);
+    }
+    selected.sort((a, b) => (a.x - player.x) ** 2 + (a.z - player.z) ** 2 - ((b.x - player.x) ** 2 + (b.z - player.z) ** 2));
+    if (selected.length > this.profile.crowd) selected.length = this.profile.crowd;
+    this.activeCount = selected.length;
+
+    const step = Math.max(dt, 0.0001);
+    for (const resident of selected) {
+      const entry = this.entryFor(resident);
+      const moved = Math.hypot(resident.x - entry.x, resident.z - entry.z);
+      const instant = Math.min(moved / step, 9);
+      entry.speed += (instant - entry.speed) * Math.min(1, step * 9);
+      entry.x = resident.x; entry.z = resident.z;
+      // Feet stay planted: the stride advances with distance covered, not with wall time.
+      const run = T.MathUtils.clamp((entry.speed - 3.4) / 3.6, 0, 1);
+      entry.phase = (entry.phase + (entry.speed / (0.78 + run * 0.5)) * Math.PI * step) % (Math.PI * 2);
+      const heading = resident.heading;
+      entry.heading = heading;
+
+      const action = this.actionFor(resident);
+      const walk = T.MathUtils.clamp(entry.speed / 3.4, 0, 1);
+      solvePose(this.pose, entry.phase, action === 'sit' ? 0 : walk, run, elapsed, entry.seed * 0.017, action);
+      this.root.x = resident.x; this.root.z = resident.z; this.root.y = 0;
+      this.root.heading = heading;
+      this.root.scale = entry.outfit.scale;
+      this.root.headScale = entry.outfit.headScale;
+      solveSkeleton(this.skeleton, this.pose, this.root);
+
+      const outfit = entry.outfit;
+      const wetSwap = weather === 'rain' && outfit.accessory === 'none' && entry.seed % 3 === 0;
+      if (wetSwap) outfit.accessory = 'umbrella';
+      else if (weather !== 'rain' && outfit.accessory === 'umbrella' && entry.seed % 3 === 0) outfit.accessory = 'none';
+      writePerson(this.meshes, this.skeleton, outfit);
+    }
+    this.meshes.flush();
+  }
 }
-export function createPlayer(){const g=new T.Group();const skin=new T.MeshStandardMaterial({color:'#aa7754',roughness:.8}),shirt=new T.MeshStandardMaterial({color:'#d8c8ae',roughness:.96}),pants=new T.MeshStandardMaterial({color:'#334342',roughness:.88}),hair=new T.MeshStandardMaterial({color:'#201d1b'});const part=(geo:T.BufferGeometry,mat:T.Material,x:number,y:number,z:number)=>{const m=new T.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;g.add(m);return m;};part(new T.CapsuleGeometry(.24,.44,4,8),shirt,0,1.12,0);part(new T.SphereGeometry(.17,12,10),skin,0,1.68,0);const h=part(new T.SphereGeometry(.18,12,8),hair,0,1.76,-.025);h.scale.y=.65;
- const limbs=[part(new T.CapsuleGeometry(.075,.47,3,8),shirt,-.31,1.08,0),part(new T.CapsuleGeometry(.075,.47,3,8),shirt,.31,1.08,0),part(new T.CapsuleGeometry(.09,.53,3,8),pants,-.13,.48,0),part(new T.CapsuleGeometry(.09,.53,3,8),pants,.13,.48,0)];part(new T.BoxGeometry(.16,.12,.28),hair,-.13,.08,.06);part(new T.BoxGeometry(.16,.12,.28),hair,.13,.08,.06);part(new T.BoxGeometry(.38,.42,.19),new T.MeshStandardMaterial({color:'#816341',roughness:.93}),0,1.17,-.24);return {group:g,animate:(t:number,moving:boolean)=>limbs.forEach((m,i)=>m.rotation.x=moving?Math.sin(t*8+(i%2)*Math.PI)*(i<2?.5:.45):0)};}
+
+/** The player's own body, shared rig, nicer materials. */
+export function createPlayer() {
+  const outfit = outfitFor(4242, 'Adult');
+  outfit.shirt = '#d8c8ae';
+  outfit.legColor = '#334342';
+  outfit.legs = 'trouser';
+  outfit.hair = 'short';
+  outfit.hairColor = '#201d1b';
+  outfit.skin = '#c08a5f';
+  outfit.accessory = 'bag';
+  outfit.sash = null;
+  outfit.garment = null;
+  outfit.female = false;
+  outfit.scale = 1;
+  const figure = new HumanFigure(outfit, 2);
+  return {
+    group: figure.group,
+    figure,
+    animate: (dtOrElapsed: number, speedOrMoving: number | boolean, action: Action = 'walk', time = dtOrElapsed, turn = 0, crouch = 0) => {
+      const legacyCall = typeof speedOrMoving === 'boolean';
+      figure.update(legacyCall ? 1 / 60 : dtOrElapsed, legacyCall ? (speedOrMoving ? 3.6 : 0) : speedOrMoving, legacyCall ? (speedOrMoving ? 'walk' : 'idle') : action, legacyCall ? dtOrElapsed : time, turn, crouch);
+    },
+    setShirtColor: (color: string) => figure.setShirtColor(color),
+  };
+}

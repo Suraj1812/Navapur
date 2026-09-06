@@ -252,7 +252,7 @@ export class HumanFigure {
     if (outfit.legs === 'skirt' || outfit.legs === 'dhoti') mesh(geo.skirt(outfit.legs, d), garment, pelvis);
     mesh(geo.head(d), skin, neck);
     mesh(geo.features(d), featureMaterial, neck);
-    if (outfit.hair !== 'bald' || true) mesh(geo.hair(outfit.hair, d), hairMaterial, neck);
+    mesh(geo.hair(outfit.hair, d), hairMaterial, neck);
 
     for (let i = 0; i < 2; i++) {
       const side = i === 0 ? 1 : -1;
@@ -280,7 +280,7 @@ export class HumanFigure {
     (this.torsoMesh.material as T.MeshPhysicalMaterial).color.set(color);
   }
 
-  update(dt: number, speed: number, action: Action, time: number, headingDelta = 0) {
+  update(dt: number, speed: number, action: Action, time: number, headingDelta = 0, crouch = 0) {
     const walk = T.MathUtils.clamp(speed / 3.4, 0, 1);
     const run = T.MathUtils.clamp((speed - 3.6) / 3.6, 0, 1);
     // Stride length scales with speed so the feet stay planted instead of skating.
@@ -289,11 +289,16 @@ export class HumanFigure {
     if (speed <= 0.05) this.phase += dt * 0.0;
     solvePose(this.pose, this.phase, walk, run, time, 1.7, action);
     const p = this.pose;
+
     const set = (name: string, rx: number, ry: number, rz: number) => {
       const joint = this.joints[name];
       if (joint) joint.object.rotation.set(rx, ry, rz);
     };
-    this.joints.pelvis.object.position.y = RIG.hipY + p.rootLift;
+    if (crouch > 0) {
+      for (let i = 0; i < 2; i++) { p.hip[i] += crouch * 0.95; p.knee[i] += crouch * 1.6; p.ankle[i] -= crouch * 0.55; }
+      p.spine += crouch * 0.22;
+    }
+    this.joints.pelvis.object.position.y = RIG.hipY + p.rootLift - crouch * 0.32;
     set('pelvis', 0, p.rootYaw - headingDelta * 0.4, p.rootRoll);
     set('torso', p.spine, p.spineTwist, p.spineSide);
     set('neck', p.neck, p.headYaw + headingDelta * 0.8, p.headRoll);

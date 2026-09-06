@@ -2,14 +2,14 @@
   "name": "Navapur — A city, a thousand stories",
   "short_name": "Navapur",
   "description": "Explore a living fictional Indian city in your browser.",
-  "start_url": "/Navapur/",
-  "scope": "/Navapur/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#13201e",
   "theme_color": "#13201e",
   "icons": [
     {
-      "src": "/Navapur/icon.svg",
+      "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
