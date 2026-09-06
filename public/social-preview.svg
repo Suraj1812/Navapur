@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#13201e"/><stop offset="1" stop-color="#314b43"/></linearGradient>
+    <linearGradient id="road" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#263331"/><stop offset=".5" stop-color="#47524a"/><stop offset="1" stop-color="#263331"/></linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#sky)"/>
+  <circle cx="944" cy="128" r="78" fill="#e9b875" opacity=".92"/>
+  <path d="M0 390 258 268 534 430 770 300 1200 476v154H0Z" fill="#526946"/>
+  <path d="M0 457 310 372 680 454 1200 349v281H0Z" fill="url(#road)"/>
+  <path d="M0 498 1200 394" stroke="#e9b875" stroke-width="10" stroke-dasharray="38 28" opacity=".95"/>
+  <g fill="#aa7652"><path d="M65 348h115v109H65z"/><path d="M215 300h146v137H215z"/><path d="M835 296h170v139H835z"/><path d="M1025 341h121v106h-121z"/></g>
+  <g fill="#f4dfb3"><rect x="88" y="374" width="20" height="25"/><rect x="132" y="374" width="20" height="25"/><rect x="245" y="331" width="26" height="29"/><rect x="303" y="331" width="26" height="29"/><rect x="868" y="328" width="28" height="31"/><rect x="930" y="328" width="28" height="31"/><rect x="1052" y="367" width="20" height="24"/></g>
+  <g font-family="Arial, sans-serif"><text x="74" y="120" fill="#91d2c5" font-size="27" font-weight="700" letter-spacing="7">AN INTERACTIVE 3D CITY</text><text x="68" y="239" fill="#fff6df" font-size="126" font-weight="800">NAVAPUR</text><text x="74" y="292" fill="#e9b875" font-size="32">A CITY, A THOUSAND STORIES</text></g>
+  <g transform="translate(777 452)"><rect width="153" height="75" rx="16" fill="#e9b875"/><rect x="29" y="-18" width="92" height="43" rx="10" fill="#e9b875"/><rect x="36" y="-11" width="32" height="22" rx="3" fill="#13201e"/><rect x="86" y="-11" width="28" height="22" rx="3" fill="#13201e"/><circle cx="32" cy="75" r="19" fill="#13201e"/><circle cx="121" cy="75" r="19" fill="#13201e"/></g>
+</svg>

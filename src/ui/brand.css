@@ -1,0 +1,15 @@
+.brand-mark {
+  display: block;
+  width: 38px;
+  height: 38px;
+  transform: none;
+  filter: drop-shadow(0 3px 10px #0a151388);
+}
+
+@media (max-width: 900px) {
+  .brand-mark {
+    width: 29px;
+    height: 29px;
+    transform: none;
+  }
+}
