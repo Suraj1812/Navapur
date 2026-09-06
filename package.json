@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run brand:assets && tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --import tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "verify": "npm run typecheck && npm test && npm run build",
-    "serve:dist": "vite preview --host 0.0.0.0 --port 4173"
+    "serve:dist": "vite preview --host 0.0.0.0 --port 4173",
+    "brand:assets": "node --import tsx scripts/build-brand-assets.mjs"
   },
   "dependencies": {
     "lucide": "^0.468.0",
@@ -25,7 +26,7 @@
     "typescript": "^5.7.2",
     "vite": "^6.1.0"
   },
-  "description": "Navapur — an interactive 3D Indian city you can walk, drive and live in, built with Three.js and Vite.",
+  "description": "Navapur \u2014 an interactive 3D Indian city you can walk, drive and live in, built with Three.js and Vite.",
   "license": "MIT",
   "engines": {
     "node": ">=20"
