@@ -194,3 +194,226 @@ export const ICONS = {
     'Speed', 'A speedometer needle, for speed and performance readouts.',
     'transport', ['gauge', 'speed', 'speedometer', 'performance', 'fps'],
     'Driving speed, and the performance overlay.'),
+
+  /* ------------------------------------------------ places and trade */
+  home: define(
+    '<path d="M3.8 10.4 12 3.6l8.2 6.8v9.2a1.4 1.4 0 0 1-1.4 1.4H5.2a1.4 1.4 0 0 1-1.4-1.4Z"/><path d="M9.4 21v-6.6h5.2V21"/>',
+    'Home', 'A house with a door, for homes and residential places.',
+    'places', ['home', 'house', 'residence', 'colony', 'rest', 'live'],
+    'Home places on the map and rest actions.'),
+  shop: define(
+    '<path d="M4 9.4h16v10.2a1.4 1.4 0 0 1-1.4 1.4H5.4A1.4 1.4 0 0 1 4 19.6Z"/><path d="M3.2 9.4 5 4.2h14l1.8 5.2M8.6 9.4c0 1.6-1.2 2.8-2.7 2.8m5.4-2.8c0 1.6 1.2 2.8 2.7 2.8m2.7-2.8c0 1.6 1.2 2.8 2.7 2.8"/>',
+    'Shop', 'An awning over a storefront, for shops and markets.',
+    'commerce', ['shop', 'store', 'market', 'kirana', 'bazaar', 'retail'],
+    'Shop places, the buy panel and market districts.'),
+  chai: define(
+    '<path d="M4.6 8.4h11.2v5.4a5.6 5.6 0 0 1-11.2 0Z"/><path d="M15.8 9.6h1.8a2.6 2.6 0 0 1 0 5.2h-1.8M4 20.6h13"/><path d="M8 5.4c.9-.9.9-1.7 0-2.6m3.6 2.6c.9-.9.9-1.7 0-2.6"/>',
+    'Chai', 'A steaming cup, for tea stalls and a moment&apos;s rest.',
+    'commerce', ['chai', 'tea', 'cup', 'stall', 'break', 'drink'],
+    'Chai stalls, the first-cup goal and rest prompts.'),
+  rupee: define(
+    '<path d="M6.6 4.6h10.8M6.6 8.6h10.8M6.6 12.6h5.2c3 0 5.2-1.8 5.2-4M6.6 12.6l8.4 7.8"/>',
+    'Rupees', 'The rupee sign, for cash, prices and the wallet.',
+    'commerce', ['rupee', 'money', 'cash', 'price', 'wallet', 'inr'],
+    'Cash readout, prices and any transaction confirmation.'),
+  hospital: define(
+    '<rect x="3.6" y="5.2" width="16.8" height="15.2" rx="2.2"/><path d="M12 9v7.4M8.4 12.7h7.2"/>',
+    'Hospital', 'A cross inside a building, for medical services.',
+    'places', ['hospital', 'clinic', 'medical', 'health', 'emergency', 'pharmacy'],
+    'Hospital and pharmacy places, and health-related events.'),
+  police: define(
+    '<path d="M12 3.2 19.4 6v6c0 4.4-3.1 7.6-7.4 9-4.3-1.4-7.4-4.6-7.4-9V6Z"/><path d="m9.4 12.2 1.9 1.9 3.6-3.9"/>',
+    'Police', 'A shield with a tick, for the police and civic safety.',
+    'places', ['police', 'safety', 'shield', 'law', 'civic', 'security'],
+    'Police stations and incident notices.'),
+  school: define(
+    '<path d="M12 4 3 8.4l9 4.4 9-4.4Z"/><path d="M6.6 10.6v5.2c0 1.8 2.4 3.2 5.4 3.2s5.4-1.4 5.4-3.2v-5.2M20.4 8.8v5"/>',
+    'School', 'A graduation cap, for schools and the campus district.',
+    'places', ['school', 'college', 'campus', 'education', 'students', 'learning'],
+    'School places and the Vidya Campus district.'),
+  temple: define(
+    '<path d="M12 2.6 15.6 8H8.4Z"/><path d="M6.4 8h11.2v12.6H6.4Z"/><path d="M10 20.6v-5a2 2 0 0 1 4 0v5M4.4 20.6h15.2"/>',
+    'Place of worship', 'A shikhara over a plinth, for temples and other places of worship.',
+    'places', ['temple', 'mandir', 'worship', 'shrine', 'faith', 'mosque', 'church'],
+    'Temple, mosque and church places, and quiet-reflection prompts.'),
+  park: define(
+    '<path d="M12 3.4c3.2 0 5.6 2.4 5.6 5.2 0 3-2.6 5.4-5.6 5.4S6.4 11.6 6.4 8.6c0-2.8 2.4-5.2 5.6-5.2Z"/><path d="M12 14v7M8.6 21h6.8"/>',
+    'Park', 'A round-canopied tree, for gardens and green space.',
+    'places', ['park', 'garden', 'tree', 'green', 'nature', 'shade'],
+    'Nehru Gardens and any green place on the map.'),
+  bank: define(
+    '<path d="M3.6 9.6 12 4.4l8.4 5.2M5.6 9.6v8.2m4.2-8.2v8.2m4.4-8.2v8.2m4.2-8.2v8.2M3.6 20.4h16.8"/>',
+    'Bank', 'A columned facade, for banking, savings and deposits.',
+    'commerce', ['bank', 'savings', 'deposit', 'withdraw', 'account', 'finance'],
+    'Deposit and withdraw actions in the inventory panel.'),
+
+  /* ------------------------------------------------ system */
+  settings: define(
+    '<path d="m9.9 3 .6 2.1 2 .9 2-.6 2.1 3.4-1.5 1.5v2.4l1.5 1.5-2.1 3.4-2-.6-2 .9-.6 2.1H9.9l-.6-2.1-2-.9-2 .6-2.1-3.4L4.7 13v-2.4L3.2 9.1l2.1-3.4 2 .6 2-.9Z"/><circle cx="10.9" cy="11.8" r="2.9"/>',
+    'Settings', 'A cog, for graphics, sound, weather and time settings.',
+    'system', ['settings', 'options', 'preferences', 'gear', 'cog', 'configure'],
+    'The top bar settings button and the pause menu.'),
+  pause: define('<path d="M8.6 4.8v14.4M15.4 4.8v14.4"/>',
+    'Pause', 'Two upright bars, pausing the city.',
+    'system', ['pause', 'stop', 'hold', 'break', 'menu'],
+    'The top bar pause button; Escape does the same thing.'),
+  play: define('<path d="M7.6 4.8 19 12 7.6 19.2Z"/>',
+    'Resume', 'A forward triangle, resuming play.',
+    'system', ['play', 'resume', 'start', 'continue', 'go'],
+    'Resume buttons in the pause menu.'),
+  close: define('<path d="m6.4 6.4 11.2 11.2M6.4 17.6 17.6 6.4"/>',
+    'Close', 'A cross, dismissing a panel or dialogue.',
+    'system', ['close', 'dismiss', 'cancel', 'exit', 'x'],
+    'Panel close buttons. Escape does the same thing.'),
+  check: define('<path d="m5 12.4 4.4 4.4L19 6.8"/>',
+    'Done', 'A tick, confirming an action.',
+    'status', ['check', 'tick', 'done', 'confirm', 'success', 'saved'],
+    'Toasts and inline confirmations.'),
+  save: define(
+    '<path d="M5 3.4h11.6L20.6 7.4v13.2H3.4V3.4Z"/><path d="M7.4 3.4v6h9.2v-6M7.4 20.6v-7.4h9.2v7.4"/>',
+    'Save', 'A floppy disk, writing the journey to this device.',
+    'system', ['save', 'store', 'write', 'persist', 'progress'],
+    'Save actions in the pause menu; F5 does the same thing.'),
+  load: define(
+    '<path d="M20.4 12a8.4 8.4 0 1 1-2.5-6"/><path d="M20.4 3.6v4.8h-4.8"/>',
+    'Load', 'A restore arrow, bringing back a saved journey.',
+    'system', ['load', 'restore', 'continue', 'resume', 'reload'],
+    'Continue and load actions; F9 does the same thing.'),
+  volume: define(
+    '<path d="M3.4 9.2h3.8L12 5v14l-4.8-4.2H3.4Z"/><path d="M15.2 8.6a4.8 4.8 0 0 1 0 6.8m2.9-9.7a8.9 8.9 0 0 1 0 12.6"/>',
+    'City sounds on', 'A speaker with sound waves, for the ambient soundscape.',
+    'system', ['volume', 'sound', 'audio', 'speaker', 'on', 'unmute'],
+    'The audio toggle in settings.'),
+  'volume-off': define(
+    '<path d="M3.4 9.2h3.8L12 5v14l-4.8-4.2H3.4Z"/><path d="m16 9.6 4.6 4.8m0-4.8L16 14.4"/>',
+    'City sounds off', 'A muted speaker, with the soundscape switched off.',
+    'system', ['mute', 'silent', 'off', 'audio', 'sound'],
+    'The audio toggle in settings when sound is off.'),
+  keyboard: define(
+    '<rect x="2.6" y="6.4" width="18.8" height="11.2" rx="2.2"/><path d="M6.4 10h.01M9.6 10h.01M12.8 10h.01M16 10h.01M6.4 13.4h.01M9.6 13.4h.01M12.8 13.4h.01M16 13.4h.01M8.4 16.4h7.2"/>',
+    'Controls', 'A keyboard, opening the controls and help panel.',
+    'system', ['keyboard', 'controls', 'keys', 'help', 'shortcuts', 'input'],
+    'The controls and help panel.'),
+  help: define(
+    '<circle cx="12" cy="12" r="8.6"/><path d="M9.6 9.6a2.4 2.4 0 1 1 3.2 2.3c-.6.2-.8.7-.8 1.3v.5"/><path d="M12 17h.01"/>',
+    'Help', 'A question mark in a circle, for guidance and hints.',
+    'system', ['help', 'question', 'guide', 'hint', 'support', 'faq'],
+    'Help affordances and the controls panel trigger.'),
+  info: define(
+    '<circle cx="12" cy="12" r="8.6"/><path d="M12 11v5.4M12 7.8h.01"/>',
+    'Information', 'An information mark, for neutral explanatory notes.',
+    'status', ['info', 'about', 'note', 'detail', 'explain'],
+    'Panel notes and non-urgent messages.'),
+  alert: define(
+    '<path d="M12 3.6 21.4 20H2.6Z"/><path d="M12 10v4.2M12 17.2h.01"/>',
+    'Attention', 'A warning triangle, for incidents and urgent notices.',
+    'status', ['alert', 'warning', 'incident', 'caution', 'danger', 'emergency'],
+    'City incidents, fire drills and collision notices.'),
+  camera: define(
+    '<rect x="2.8" y="7" width="18.4" height="13" rx="2.4"/><circle cx="12" cy="13.5" r="3.8"/><path d="M8.6 7 10 4.2h4L15.4 7"/>',
+    'Photo mode', 'A camera body with a lens, for capture and photo mode.',
+    'system', ['camera', 'photo', 'screenshot', 'capture', 'picture'],
+    'Photo mode and screenshot affordances.'),
+  eye: define(
+    '<path d="M2.4 12S6 5.8 12 5.8 21.6 12 21.6 12 18 18.2 12 18.2 2.4 12 2.4 12Z"/><circle cx="12" cy="12" r="3.2"/>',
+    'View', 'An eye, for visibility, first-person view and preview toggles.',
+    'system', ['eye', 'view', 'visible', 'preview', 'look', 'camera'],
+    'First-person toggle and visibility switches.'),
+  layers: define(
+    '<path d="m12 3.4 8.6 4.6L12 12.6 3.4 8Z"/><path d="m3.4 12.4 8.6 4.6 8.6-4.6M3.4 16.6 12 21.2l8.6-4.6"/>',
+    'Detail level', 'Stacked planes, for graphics quality and level of detail.',
+    'system', ['layers', 'quality', 'graphics', 'detail', 'performance', 'stack'],
+    'The graphics quality selector.'),
+  sparkle: define(
+    '<path d="M12 3.4 13.7 9 19.4 10.6 13.7 12.3 12 18 10.3 12.3 4.6 10.6 10.3 9Z"/><path d="M18.4 16.2 19 18l1.8.6-1.8.6-.6 1.8-.6-1.8-1.8-.6 1.8-.6Z"/>',
+    'Highlight', 'A four-point sparkle, for new, generated or highlighted content.',
+    'status', ['sparkle', 'new', 'shine', 'magic', 'highlight', 'featured'],
+    'New-feature badges and highlighted moments. Use sparingly.'),
+} as const satisfies Record<string, IconDefinition>;
+
+export type IconName = keyof typeof ICONS;
+
+export const ICON_NAMES = Object.keys(ICONS) as IconName[];
+
+/** The searchable metadata for every icon, keyed by name. */
+export const ICON_METADATA: Record<IconName, IconMeta> =
+  Object.fromEntries(ICON_NAMES.map(name => [name, ICONS[name].meta])) as Record<IconName, IconMeta>;
+
+/** All icons in one category, for design references and pickers. */
+export const iconsByCategory = (category: IconCategory) =>
+  ICON_NAMES.filter(name => ICONS[name].meta.category === category);
+
+/** Free-text search across names, labels, descriptions and keywords. */
+export function findIcons(query: string): IconName[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return ICON_NAMES;
+  return ICON_NAMES.filter(name => {
+    const meta = ICONS[name].meta;
+    return name.includes(needle)
+      || meta.label.toLowerCase().includes(needle)
+      || meta.description.toLowerCase().includes(needle)
+      || meta.keywords.some(keyword => keyword.includes(needle));
+  });
+}
+
+const escapeAttribute = (value: string) => value.replace(/[&<>"']/g, char =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]!));
+
+let titleSequence = 0;
+
+export interface IconOptions {
+  /** Give the icon an accessible name; omit for decorative icons. */
+  label?: string | true;
+  /** Stroke width override, in the 24-unit grid. */
+  weight?: number;
+  size?: number;
+}
+
+/**
+ * Renders an icon as inline SVG. Icons are decorative by default - pass
+ * `{ label: true }` to use the icon's own accessible name, or a string to
+ * override it, whenever the icon is the only thing describing a control.
+ */
+export function icon(name: IconName | string, cls = '', options: IconOptions = {}): string {
+  const definition = (ICONS as Record<string, IconDefinition>)[name] ?? ICONS.pin;
+  const label = options.label === true ? definition.meta.label : options.label;
+  const id = label ? `icon-title-${++titleSequence}` : '';
+  const accessibility = label
+    ? ` role="img" aria-labelledby="${id}"`
+    : ' aria-hidden="true" focusable="false"';
+  const size = options.size ? ` width="${options.size}" height="${options.size}"` : '';
+  return `<svg class="icon ${cls}" viewBox="0 0 24 24"${size} fill="${definition.fill ? 'currentColor' : 'none'}" `
+    + `stroke="currentColor" stroke-width="${options.weight ?? 1.5}" stroke-linecap="round" stroke-linejoin="round"${accessibility}>`
+    + (label ? `<title id="${id}">${escapeAttribute(label)}</title>` : '')
+    + `${definition.path}</svg>`;
+}
+
+/** Maps a city place to the icon that represents it, so map, panels and prompts agree. */
+export function placeIcon(kind: string): IconName {
+  const map: Record<string, IconName> = {
+    chai: 'chai', restaurant: 'food', kirana: 'shop', clothing: 'shop', electronics: 'shop',
+    pharmacy: 'hospital', hospital: 'hospital', police: 'police', school: 'school',
+    office: 'bank', park: 'park', station: 'bus', home: 'home',
+    temple: 'temple', mosque: 'temple', church: 'temple', mechanic: 'wrench', fuel: 'fuel',
+  };
+  return map[kind] ?? 'pin';
+}
+
+/** Maps a weather state to its icon. */
+export function weatherIconName(weather: string): IconName {
+  return weather === 'rain' ? 'rain' : weather === 'cloudy' ? 'cloud' : 'sun';
+}
+
+/**
+ * A `<symbol>` sprite of the whole set, for documentation pages or anywhere the
+ * icons should be referenced with `<use href="#navapur-icon-name">`.
+ */
+export function iconSprite(): string {
+  const symbols = ICON_NAMES.map(name => {
+    const definition = ICONS[name];
+    return `<symbol id="navapur-icon-${name}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">`
+      + `<title>${escapeAttribute(definition.meta.label)}</title><desc>${escapeAttribute(definition.meta.description)}</desc>`
+      + `${definition.path}</symbol>`;
+  }).join('');
+  return `<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">${symbols}</svg>`;
+}

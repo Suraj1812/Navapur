@@ -1,6 +1,9 @@
 import type { Item, Place, Weather } from '../core/types';
 import './style.css';
 import './brand.css';
+import { icon, placeIcon, weatherIconName } from './icons';
+export { icon, ICONS, ICON_METADATA, ICON_NAMES, iconsByCategory, findIcons, iconSprite, placeIcon } from './icons';
+export type { IconName, IconMeta, IconCategory } from './icons';
 
 export interface UIView {
   district: string; subtitle?: string; time: string; day?: number; weather: Weather;
@@ -21,28 +24,6 @@ export interface UISettings {
   weather: Weather; time: number; timeScale: number; audio: boolean; quality: string; debug: boolean;
 }
 
-const icons: Record<string, string> = {
-  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>',
-  cloud: '<path d="M6 18a5 5 0 1 1 .8-9.94A6 6 0 0 1 18.6 9 4.5 4.5 0 0 1 18 18Z"/>',
-  rain: '<path d="M5 15a4 4 0 0 1 1.8-7.6A5 5 0 0 1 17 8a4 4 0 0 1 2 7M8 18l-1 3m6-3-1 3m6-3-1 3"/>',
-  pause: '<path d="M8 5v14M16 5v14"/>',
-  settings: '<path d="m9.8 3-.6 2-2 .9-1.9-.5-2.1 3.4 1.5 1.5v2.4l-1.5 1.5 2.1 3.4 1.9-.5 2 .9.6 2h4.4l.6-2 2-.9 1.9.5 2.1-3.4-1.5-1.5v-2.4l1.5-1.5-2.1-3.4-1.9.5-2-.9-.6-2Z"/><circle cx="12" cy="11.5" r="3"/>',
-  arrow: '<path d="M4 12h15m-5-5 5 5-5 5"/>',
-  compass: '<circle cx="12" cy="12" r="9"/><path d="m16 8-2 6-6 2 2-6Z"/>',
-  pin: '<path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/>',
-  bag: '<path d="M5 8h14l1 13H4L5 8Zm3 0V6a4 4 0 0 1 8 0v2"/>',
-  heart: '<path d="M20 5c-2-2-5-2-8 1-3-3-6-3-8-1s-2 5 0 7l8 8 8-8c2-2 2-5 0-7Z"/>',
-  bolt: '<path d="m13 2-8 12h6l-1 8 9-13h-7l1-7Z"/>',
-  food: '<path d="M5 3v7m3-7v7m3-7v7M5 7h6m-3 3v11M19 3c-4 2-4 7 0 8v10m0-18v8"/>',
-  close: '<path d="m6 6 12 12M6 18 18 6"/>',
-  check: '<path d="m5 12 4 4L19 6"/>',
-  save: '<path d="M5 3h12l4 4v14H3V3h2Zm2 0v6h10V3M7 21v-8h10v8"/>',
-  volume: '<path d="M3 9h4l5-4v14l-5-4H3V9Zm12-2a7 7 0 0 1 0 10m3-13a11 11 0 0 1 0 16"/>',
-  book: '<path d="M3 4h6c2 0 3 1 3 2 0-1 1-2 3-2h6v16h-6c-2 0-3 1-3 1s-1-1-3-1H3V4Zm9 2v15"/>',
-  car: '<path d="m5 7 2-4h10l2 4 2 3v8H3v-8l2-3Zm0 0h14M7 12h1m8 0h1M5 18v3m14-3v3"/>',
-};
-
-export const icon = (name: string, cls = '') => `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] ?? icons.pin}</svg>`;
 export const escapeHTML = (value: unknown) => String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
 const money = (value: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(value);
 
@@ -73,7 +54,7 @@ export class GameUI {
       <header class="topbar">
         <div class="brand"><img class="brand-mark" src="${import.meta.env.BASE_URL}logo-mark.svg" alt="" aria-hidden="true"><div class="brand-type"><span>NAVAPUR<span class="brand-hindi">नवापुर</span></span><small>A CITY. A THOUSAND LIVES.</small></div><span class="live-badge"><i></i> LIVE CITY</span></div>
         <div class="location-heading">${icon('pin')}<div><strong data-ref="district">Old Market</strong><span data-ref="subtitle">NAVAPUR, INDIA</span></div></div>
-        <div class="topbar-right"><div class="world-clock"><span class="weather-icon" data-ref="weatherIcon">${icon('sun')}</span><div><b data-ref="time">08:30</b><span><span data-ref="weather">Clear skies</span><i>·</i> DAY <span data-ref="day">1</span></span></div></div><div class="topbar-divider"></div><button class="icon-button" data-action="pause" aria-label="Pause game" title="Pause · Esc">${icon('pause')}</button><button class="icon-button" data-action="settings" aria-label="Open settings" title="Settings">${icon('settings')}</button></div>
+        <div class="topbar-right"><div class="world-clock"><span class="weather-icon" data-ref="weatherIcon">${icon('sun')}</span><div><b data-ref="time">08:30</b><span><span data-ref="weather">Clear skies</span><i>·</i> DAY <span data-ref="day">1</span></span></div></div><div class="topbar-divider"></div><button class="icon-button" data-action="pause" aria-label="Pause game" title="Pause · Esc">${icon('pause', '', { label: 'Pause' })}</button><button class="icon-button" data-action="settings" aria-label="Open settings" title="Settings">${icon('settings', '', { label: 'Settings' })}</button></div>
       </header>
 
       <section class="welcome" data-ref="welcome" aria-label="Welcome to Navapur">
@@ -82,7 +63,7 @@ export class GameUI {
         <p>The first chai of the morning. The familiar hum of an auto. A thousand lives unfolding around you.</p>
         <p class="welcome-invitation">Step outside. Find your own way.</p>
         <button class="primary-button explore-button" data-action="start"><span>Explore Navapur</span>${icon('arrow')}</button>
-        ${options.hasSave ? `<button class="continue-button" data-action="load">${icon('save')} Continue saved game <span>↗</span></button>` : ''}
+        ${options.hasSave ? `<button class="continue-button" data-action="load">${icon('load')} Continue saved game <span>↗</span></button>` : ''}
         <div class="welcome-note"><span class="tiny-dot"></span> An open city. An ordinary, extraordinary life.</div>
       </section>
 
@@ -165,7 +146,7 @@ export class GameUI {
     this.setText('time', view.time);
     this.setText('day', String(view.day ?? 1));
     this.setText('weather', view.weather === 'clear' ? 'Clear skies' : view.weather === 'cloudy' ? 'Overcast' : 'Monsoon rain');
-    const weatherIcon = view.weather === 'clear' ? 'sun' : view.weather === 'cloudy' ? 'cloud' : 'rain';
+    const weatherIcon = weatherIconName(view.weather);
     if (this.refs.weatherIcon.dataset.weather !== weatherIcon) {
       this.refs.weatherIcon.innerHTML = icon(weatherIcon);
       this.refs.weatherIcon.dataset.weather = weatherIcon;
@@ -240,7 +221,7 @@ export class GameUI {
   }
 
   pausePanel() {
-    this.openPanel('A moment to yourself.', `<p class="panel-description">The city can wait. Pick up where you left off.</p><div class="menu-actions"><button class="primary-button" data-action="ui-close">Back to the city ${icon('arrow')}</button><button class="secondary-button" data-action="save">${icon('save')} Save your journey</button><button class="secondary-button" data-action="load">${icon('compass')} Load saved journey</button><button class="secondary-button" data-action="settings">${icon('settings')} Settings</button><button class="text-button" data-action="help">View controls & city guide</button></div>`, 'PAUSED · NAVAPUR');
+    this.openPanel('A moment to yourself.', `<p class="panel-description">The city can wait. Pick up where you left off.</p><div class="menu-actions"><button class="primary-button" data-action="ui-close">Back to the city ${icon('arrow')}</button><button class="secondary-button" data-action="save">${icon('save')} Save your journey</button><button class="secondary-button" data-action="load">${icon('load')} Load saved journey</button><button class="secondary-button" data-action="settings">${icon('settings')} Settings</button><button class="text-button" data-action="help">${icon('keyboard')} View controls &amp; city guide</button></div>`, 'PAUSED · NAVAPUR');
   }
 
   settingsPanel(settings: UISettings) {
@@ -259,11 +240,11 @@ export class GameUI {
   }
 
   inventoryPanel(items: { item: Item; quantity: number }[]) {
-    this.openPanel('The things you carry.', `<p class="panel-description">A few essentials for wherever the day takes you.</p>${items.length ? `<div class="item-list">${items.map(({ item, quantity }) => `<article class="item-row"><span class="item-symbol">${icon(item.category === 'food' || item.hunger ? 'food' : 'bag')}</span><div class="item-info"><h3>${escapeHTML(item.name)} <span>× ${quantity}</span></h3><p>${escapeHTML(item.category)}${item.hunger ? ` · +${item.hunger} fullness` : ''}${item.energy ? ` · +${item.energy} energy` : ''}${item.health ? ` · +${item.health} health` : ''}</p></div><div class="item-actions">${item.hunger || item.energy || item.health ? `<button class="small-button" data-action="eat" data-value="${escapeHTML(item.id)}">${item.category === 'medicine' ? 'Use' : 'Enjoy'}</button>` : ''}<button class="text-button" data-action="sell" data-value="${escapeHTML(item.id)}">Sell ₹${Math.floor(item.price * 0.5)}</button></div></article>`).join('')}</div>` : `<div class="empty-state">${icon('bag')}<h3>A little room for possibility.</h3><p>Your bag is empty. Stop by a chai stall or a kirana store to pick up something for the road.</p><button class="secondary-button" data-action="map">Find a nearby shop ${icon('arrow')}</button></div>`}`, 'YOUR BAG');
+    this.openPanel('The things you carry.', `<p class="panel-description">A few essentials for wherever the day takes you.</p>${items.length ? `<div class="item-list">${items.map(({ item, quantity }) => `<article class="item-row"><span class="item-symbol">${icon(item.category === 'food' || item.hunger ? 'food' : item.category === 'medicine' ? 'hospital' : item.id === 'fuel' ? 'fuel' : item.id === 'repair' ? 'wrench' : 'bag')}</span><div class="item-info"><h3>${escapeHTML(item.name)} <span>× ${quantity}</span></h3><p>${escapeHTML(item.category)}${item.hunger ? ` · +${item.hunger} fullness` : ''}${item.energy ? ` · +${item.energy} energy` : ''}${item.health ? ` · +${item.health} health` : ''}</p></div><div class="item-actions">${item.hunger || item.energy || item.health ? `<button class="small-button" data-action="eat" data-value="${escapeHTML(item.id)}">${item.category === 'medicine' ? 'Use' : 'Enjoy'}</button>` : ''}<button class="text-button" data-action="sell" data-value="${escapeHTML(item.id)}">Sell ₹${Math.floor(item.price * 0.5)}</button></div></article>`).join('')}</div>` : `<div class="empty-state">${icon('bag')}<h3>A little room for possibility.</h3><p>Your bag is empty. Stop by a chai stall or a kirana store to pick up something for the road.</p><button class="secondary-button" data-action="map">Find a nearby shop ${icon('arrow')}</button></div>`}`, 'YOUR BAG');
   }
 
   mapPanel() {
-    this.openPanel('Find your next little adventure.', `<p class="panel-description">Choose a destination. There is always something along the way.</p><div class="full-map-wrap"><canvas class="full-map" width="1000" height="650" aria-label="Full city map"></canvas><span class="full-map-north">N ↑</span><div class="map-legend"><span><i></i> You are here</span><span><i></i> Places to discover</span></div></div><div class="map-list-heading"><h3>AROUND THE CITY</h3><button class="text-button" data-action="clear-waypoint">Clear route</button></div><div class="place-list">${this.places.map((p) => `<button class="place-row" data-action="waypoint" data-value="${escapeHTML(p.id)}"><span class="place-icon">${icon(p.kind === 'park' ? 'sun' : p.kind === 'chai' || p.kind === 'restaurant' ? 'food' : p.kind === 'home' ? 'pin' : 'bag')}</span><span><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(p.district)} · ${escapeHTML(p.hindi)}</small></span><span class="place-distance">${this.currentView ? `${Math.round(Math.hypot(p.x - this.currentView.x, p.z - this.currentView.z))} m` : ''}${icon('arrow')}</span></button>`).join('')}</div>`, 'NAVAPUR · CITY MAP');
+    this.openPanel('Find your next little adventure.', `<p class="panel-description">Choose a destination. There is always something along the way.</p><div class="full-map-wrap"><canvas class="full-map" width="1000" height="650" aria-label="Full city map"></canvas><span class="full-map-north">N ↑</span><div class="map-legend"><span><i></i> You are here</span><span><i></i> Places to discover</span></div></div><div class="map-list-heading"><h3>AROUND THE CITY</h3><button class="text-button" data-action="clear-waypoint">Clear route</button></div><div class="place-list">${this.places.map((p) => `<button class="place-row" data-action="waypoint" data-value="${escapeHTML(p.id)}"><span class="place-icon">${icon(placeIcon(p.kind))}</span><span><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(p.district)} · ${escapeHTML(p.hindi)}</small></span><span class="place-distance">${this.currentView ? `${Math.round(Math.hypot(p.x - this.currentView.x, p.z - this.currentView.z))} m` : ''}${icon('arrow')}</span></button>`).join('')}</div>`, 'NAVAPUR · CITY MAP');
     const fullMap = this.refs.panelContent.querySelector<HTMLCanvasElement>('.full-map');
     if (fullMap) this.drawMap(fullMap);
   }
